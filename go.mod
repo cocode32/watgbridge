@@ -4,8 +4,6 @@ go 1.23.0
 
 toolchain go1.24.4
 
-toolchain go1.24.1
-
 require (
 	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.33
 	github.com/emersion/go-vcard v0.0.0-20241024213814-c9703dde27ff
