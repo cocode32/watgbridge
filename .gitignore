@@ -17,6 +17,7 @@
 *.yaml
 !sample_config.yaml
 !sensible_config.yaml
+!sample_newteq_config.yaml
 
 /watgbridge
 *.db
