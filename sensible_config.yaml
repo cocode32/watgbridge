@@ -19,8 +19,8 @@ architecture:
 telegram:
   # SELF-HOSTED-API
   # use if you have a local bot api -- helpful to uploading larger files
-  api_url: # http://localhost:4887
-  self_hosted_api: false
+  api_url: http://localhost:4887
+  self_hosted_api: true
 
   # REPLACE IDs
   bot_token: 186969
@@ -40,7 +40,7 @@ telegram:
   send_my_presence: false
   # Setting this to true will mark all unread messages in a chat as read when you send a new message using Telegram
   # IMPORTANT NOTE: the message stays unread on the whatsapp desktop client if this is false. So, use that as you'd like. If you want the message notifications to be removed from whatsapp, you will need to set this to true. You can turn off read receipts on the app itself, if you want to remove whatsapp notifications and set this to true
-  send_my_read_receipts: false
+  send_my_read_receipts: true
 
   # Send a silent "Successfully sent" message
   # this lets the bot send a message with the confirmation_type as how it will send the message. Default of emoji is cleaner and light weight. "text" will come as a new message, but disappear after a few seconds. With emoji you can see with messages were sent successfully by the bot, long after.
@@ -80,7 +80,7 @@ whatsapp:
   ####
   ## End contact specific settings
   ####
-  skip_documents: false
+  skip_documents: true
   skip_images: false
   skip_gifs: false
   skip_videos: false
@@ -93,10 +93,10 @@ whatsapp:
   skip_profile_picture_updates: false
   skip_group_settings_updates: false # This includes joins, leaves, name change, etc.
   skip_chat_details: true
-  send_revoked_message_updates: false
+  send_revoked_message_updates: true
   whatsmeow_debug_mode: false
-  send_my_messages_from_other_devices: false # If set to true, the messages sent by you from other devices will be sent to Telgram as well
-  create_thread_for_info_updates: false # If set to true, new thread will be created (if it doesn't exist) when profile picture changes for group/someone and when group metadata/members changes
+  send_my_messages_from_other_devices: true # If set to true, the messages sent by you from other devices will be sent to Telgram as well
+  create_thread_for_info_updates: true # If set to true, new thread will be created (if it doesn't exist) when profile picture changes for group/someone and when group metadata/members changes
   sticker_metadata: # This will work only if you have webpmux installed on your system
     pack_name: WaTgBridge
     author_name: WaTgBridge
