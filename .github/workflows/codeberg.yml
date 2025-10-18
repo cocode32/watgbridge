@@ -1,8 +1,6 @@
 name: Mirror to Codeberg
 on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  workflow_dispatch: # Only runs when you click 'Run workflow' in the GitHub UI
 
 jobs:
   mirror:
