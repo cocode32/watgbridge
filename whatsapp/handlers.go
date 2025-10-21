@@ -3,6 +3,7 @@ package whatsapp
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"html"
 	"strings"
@@ -26,6 +27,7 @@ import (
 func WhatsAppEventHandler(evt interface{}) {
 
 	cfg := state.State.Config
+	fmt.Printf("PURA:: Checking Type: %T\n", evt)
 
 	switch v := evt.(type) {
 
@@ -160,6 +162,33 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		waClient = state.State.WhatsAppClient
 	)
 	defer logger.Sync()
+	jid := v.Info.Sender
+	//checkLid := waClient.DangerousInternals().GetOwnID()
+	//goingJid, _ := waTypes.ParseJID(v.Info.DeviceSentMeta.DestinationJID)
+	isU, _ := v.Info.Sender.Value()
+	fmt.Printf("\n\nPURA:: %v\n\n", isU)
+	//checkLid, _ := waClient.GetUserInfo([]waTypes.JID{goingJid})
+	//fmt.Printf("PURA:: %v", checkLid)
+	jsonData, _ := json.MarshalIndent(jid, "", " ")
+	fmt.Printf("PURA:: %s", jsonData)
+	whatis, _ := waClient.Store.Contacts.GetContact(waClient.BackgroundEventCtx, v.Info.Sender)
+	keypair := waClient.Store.GetIdentityKeyPair()
+	fmt.Printf("PURA:: info %v, %v\n", whatis, keypair)
+
+	userInfo, err := waClient.GetUserInfo([]waTypes.JID{v.Info.Sender})
+	if err != nil {
+		fmt.Printf("Failed to get user info: %v\n", err)
+		return
+	}
+
+	// The result is a map. Retrieve the UserInfo for the LID
+	if info, ok := userInfo[jid]; ok {
+		// The `JID` field within the UserInfo struct will contain the resolved phone number JID
+		resolvedJID := info.Devices
+		fmt.Printf("Resolved LID %s to JID: %v\n", jsonData, resolvedJID)
+	} else {
+		fmt.Printf("Could not resolve LID %s\n", jsonData)
+	}
 
 	var msgId string
 	if isEdited {
