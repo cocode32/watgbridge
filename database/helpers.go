@@ -381,3 +381,33 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 
 	return settings.IsEphemeral, settings.EphemeralTimer, true, nil
 }
+
+func GetContact(jidOrLid string) any {
+	db := state.State.Database
+
+	var legacyContact = ContactName{
+		ID: jidOrLid,
+	}
+	db.First(&legacyContact)
+
+	if state.State.Config.DatabaseVersion <= 1 {
+		return legacyContact
+	}
+
+	var userContactJid = ContactMapping{
+		ContactJid: jidOrLid,
+	}
+	var userContactLid = ContactMapping{
+		ContactLid: jidOrLid,
+	}
+	db.First(&userContactJid)
+	db.First(&userContactLid)
+
+	if userContactJid.ID <= 0 {
+		return userContactJid
+	} else if userContactLid.ID <= 0 {
+		return userContactLid
+	} else {
+		return legacyContact
+	}
+}

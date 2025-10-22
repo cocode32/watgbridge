@@ -27,7 +27,7 @@ type ChatThreadPair struct {
 }
 
 type ContactName struct {
-	ID           string `gorm:"primaryKey;"` // WhatsApp Contact JID
+	ID           string `gorm:"primaryKey;"` // Previous WhatsApp Contact JID
 	FirstName    string
 	FullName     string
 	PushName     string
@@ -40,6 +40,17 @@ type ChatEphemeralSettings struct {
 	EphemeralTimer uint32
 }
 
+type ContactMapping struct {
+	ID              int32  `gorm:"primaryKey;autoIncrement"`
+	LegacyContactID string `gorm:"unique"`
+	ContactJid      string `gorm:"index:jid_lid,unique"`
+	ContactLid      string `gorm:"index:jid_lid,unique"`
+}
+
+type DatabaseVersion struct {
+	Verion int32 `gorm:"unique"`
+}
+
 func AutoMigrate() error {
 	db := state.State.Database
 	return db.AutoMigrate(
@@ -47,5 +58,7 @@ func AutoMigrate() error {
 		&ChatThreadPair{},
 		&ContactName{},
 		&ChatEphemeralSettings{},
+		&ContactMapping{},
+		&DatabaseVersion{Verion: state.State.Config.DatabaseVersion},
 	)
 }

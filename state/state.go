@@ -37,5 +37,5 @@ var State state
 
 func init() {
 	WATGBRIDGE_VERSION = strings.TrimSpace(WATGBRIDGE_VERSION)
-	State.Config = &Config{Path: "config.yaml"}
+	State.Config = &Config{Path: "config.yaml", DatabaseVersion: 2}
 }

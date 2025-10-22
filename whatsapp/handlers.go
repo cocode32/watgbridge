@@ -3,7 +3,6 @@ package whatsapp
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"html"
 	"strings"
@@ -17,6 +16,7 @@ import (
 	goVCard "github.com/emersion/go-vcard"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
+	"go.mau.fi/whatsmeow/proto/waHistorySync"
 	waTypes "go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
@@ -41,6 +41,9 @@ func WhatsAppEventHandler(evt interface{}) {
 		if !cfg.WhatsApp.SkipProfilePictureUpdates {
 			PictureEventHandler(v)
 		}
+
+	case *events.HistorySync:
+		HistorySyncHandler(v)
 
 	case *events.GroupInfo:
 		if !cfg.WhatsApp.SkipGroupSettingsUpdates {
@@ -106,6 +109,12 @@ func WhatsAppEventHandler(evt interface{}) {
 
 }
 
+func HistorySyncHandler(event *events.HistorySync) {
+	if event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME.Enum() {
+		// this will contiain the already known pn and lid mappings
+	}
+}
+
 func MessageFromMeEventHandler(text string, v *events.Message, isEdited bool) {
 	logger := state.State.Logger
 	defer logger.Sync()
@@ -162,33 +171,6 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		waClient = state.State.WhatsAppClient
 	)
 	defer logger.Sync()
-	jid := v.Info.Sender
-	//checkLid := waClient.DangerousInternals().GetOwnID()
-	//goingJid, _ := waTypes.ParseJID(v.Info.DeviceSentMeta.DestinationJID)
-	isU, _ := v.Info.Sender.Value()
-	fmt.Printf("\n\nPURA:: %v\n\n", isU)
-	//checkLid, _ := waClient.GetUserInfo([]waTypes.JID{goingJid})
-	//fmt.Printf("PURA:: %v", checkLid)
-	jsonData, _ := json.MarshalIndent(jid, "", " ")
-	fmt.Printf("PURA:: %s", jsonData)
-	whatis, _ := waClient.Store.Contacts.GetContact(waClient.BackgroundEventCtx, v.Info.Sender)
-	keypair := waClient.Store.GetIdentityKeyPair()
-	fmt.Printf("PURA:: info %v, %v\n", whatis, keypair)
-
-	userInfo, err := waClient.GetUserInfo([]waTypes.JID{v.Info.Sender})
-	if err != nil {
-		fmt.Printf("Failed to get user info: %v\n", err)
-		return
-	}
-
-	// The result is a map. Retrieve the UserInfo for the LID
-	if info, ok := userInfo[jid]; ok {
-		// The `JID` field within the UserInfo struct will contain the resolved phone number JID
-		resolvedJID := info.Devices
-		fmt.Printf("Resolved LID %s to JID: %v\n", jsonData, resolvedJID)
-	} else {
-		fmt.Printf("Could not resolve LID %s\n", jsonData)
-	}
 
 	var msgId string
 	if isEdited {
