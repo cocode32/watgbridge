@@ -126,28 +126,6 @@ func MessageFromMeEventHandler(text string, v *events.Message, isEdited bool) {
 		msgId = v.Info.ID
 	}
 
-	// Get ID of the current chat
-	if text == ".id" {
-		waClient := state.State.WhatsAppClient
-
-		_, err := waClient.SendMessage(context.Background(), v.Info.Chat, &waE2E.Message{
-			ExtendedTextMessage: &waE2E.ExtendedTextMessage{
-				Text: proto.String(fmt.Sprintf("The ID of the current chat is:\n\n```%s```", v.Info.Chat.String())),
-				ContextInfo: &waE2E.ContextInfo{
-					StanzaID:      proto.String(msgId),
-					Participant:   proto.String(v.Info.MessageSource.Sender.String()),
-					QuotedMessage: v.Message,
-				},
-			},
-		})
-		if err != nil {
-			logger.Error("failed to reply to .id command",
-				zap.String("event_id", v.Info.ID),
-				zap.Error(err),
-			)
-		}
-	}
-
 	if !isEdited {
 		// Tag everyone in the group
 		textSplit := strings.Fields(strings.ToLower(text))
