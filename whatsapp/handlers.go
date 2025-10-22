@@ -21,13 +21,12 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
-	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm/clause"
 )
 
 func WhatsAppEventHandler(evt interface{}) {
 
 	cfg := state.State.Config
-	fmt.Printf("PURA:: Checking Type: %T\n", evt)
 
 	switch v := evt.(type) {
 
@@ -110,8 +109,15 @@ func WhatsAppEventHandler(evt interface{}) {
 }
 
 func HistorySyncHandler(event *events.HistorySync) {
-	if event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME.Enum() {
+	// cool, we have chatted to people in the past, let's get already known lids and jids
+	if event.Data.SyncType != nil && *event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME {
 		// this will contiain the already known pn and lid mappings
+		for _, mapping := range event.Data.PhoneNumberToLidMappings {
+			state.State.Database.Clauses(clause.OnConflict{DoNothing: true}).Create(&database.ContactMapping{
+				ContactJid: *mapping.PnJID,
+				ContactLid: *mapping.LidJID,
+			})
+		}
 	}
 }
 
