@@ -70,10 +70,10 @@ type Config struct {
 		WhatsmeowDebugMode             bool     `yaml:"whatsmeow_debug_mode"`
 		SendMyMessagesFromOtherDevices bool     `yaml:"send_my_messages_from_other_devices"`
 		CreateThreadForInfoUpdates     bool     `yaml:"create_thread_for_info_updates"`
+		AllowEveryoneTagging           bool     `yaml:"allow_everyone_tagging"`
 	} `yaml:"whatsapp"`
 
-	Database      map[string]string `yaml:"database"`
-	LidWorkaround bool              `yaml:"lid_workaround"`
+	Database map[string]string `yaml:"database"`
 }
 
 func (cfg *Config) LoadConfig() error {

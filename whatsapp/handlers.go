@@ -168,6 +168,10 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		}
 	}
 
+	var thisSender = v.Info.Sender.User
+	var thatSender = v.Info.SenderAlt.User
+	database.GetContact(thisSender, thatSender)
+
 	if v.Info.Chat.String() == "status@broadcast" &&
 		(cfg.WhatsApp.SkipStatus ||
 			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, v.Info.MessageSource.Sender.User)) {

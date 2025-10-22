@@ -41,10 +41,9 @@ type ChatEphemeralSettings struct {
 }
 
 type ContactMapping struct {
-	ID              int32 `gorm:"primaryKey;autoIncrement"`
-	LegacyContactID string
-	ContactJid      string `gorm:"index:jid_lid,unique"`
-	ContactLid      string `gorm:"index:jid_lid,unique"`
+	ID         int32  `gorm:"primaryKey;autoIncrement"`
+	ContactJid string `gorm:"index:jid_lid,unique"`
+	ContactLid string `gorm:"index:jid_lid,unique"`
 }
 
 func AutoMigrate() error {

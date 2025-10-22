@@ -6,6 +6,7 @@ import (
 	"watgbridge/state"
 
 	"go.mau.fi/whatsmeow/types"
+	"gorm.io/gorm/clause"
 )
 
 func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgChatId, tgMsgId, tgThreadId int64) error {
@@ -382,43 +383,50 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 	return settings.IsEphemeral, settings.EphemeralTimer, true, nil
 }
 
-func GetContact(jidOrLid1 string, jidOrLid2 string) any {
+func GetContact(this string, that string) ContactMapping {
 	db := state.State.Database
 
-	var legacyContact1 = ContactName{
-		ID: jidOrLid1,
-	}
-	db.First(&legacyContact1)
-	var legacyContact2 = ContactName{
-		ID: jidOrLid2,
+	if this == "" || that == "" {
+		return ContactMapping{}, nil
 	}
 
-	if !state.State.Config.LidWorkaround {
-		if legacyContact1 != nil {
-			return legacyContact1
-		} else {
-			return legacyContact2
-		}
-	}
+	var lid string
+	var jid string
 
-	var userContactJid = ContactMapping{
-		ContactJid: jidOrLid,
-	}
-	var userContactLid = ContactMapping{
-		ContactLid: jidOrLid,
-	}
-	db.First(&userContactJid)
-	db.First(&userContactLid)
-
-	if userContactJid.ID <= 0 {
-		userContactJid.LegacyContactID = legacyContact.ID
-		db.Save(userContactJid)
-		return userContactJid
-	} else if userContactLid.ID <= 0 {
-		userContactLid.LegacyContactID = legacyContact.ID
-		db.Save(userContactJid)
-		return userContactLid
+	thisParsed, _ := types.ParseJID(this)
+	if thisParsed.Server == "lid" {
+		lid = thisParsed.User
 	} else {
-		return legacyContact
+		jid = thisParsed.User
+	}
+	thatParsed, _ := types.ParseJID(that)
+	if thatParsed.Server == "lid" {
+		lid = thatParsed.User
+	} else {
+		jid = thatParsed.User
+	}
+
+	var userContact ContactMapping
+	var result = db.Where(&ContactMapping{
+		ContactJid: jid,
+		ContactLid: lid,
+	}).First(&userContact)
+
+	if result.Error == nil {
+		return userContact, nil
+	} else {
+		db.Clauses(clause.OnConflict{DoNothing: true}).Create(&ContactMapping{
+			ContactJid: jid,
+			ContactLid: lid,
+		})
+		var result = db.Where(&ContactMapping{
+			ContactJid: jid,
+			ContactLid: lid,
+		}).First(&userContact)
+		if result.Error != nil {
+			panic(result.Error)
+		} else {
+			return result.Model()
+		}
 	}
 }
