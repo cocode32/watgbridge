@@ -1,3 +1,7 @@
+> ⚠️
+> 
+> THIS HEAD IS CURRENTLY BROKEN, BECAUSE I WANTED TO MAKE IT BACKWARDS COMPATIBLE. BUT I AM A MERE MORTAL
+
 # coco_sanity changes
 
 I've kept the original README.md intact below. I'm adding additional information here for anyone that would like to use this instead of the original.
