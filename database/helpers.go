@@ -386,8 +386,12 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 func GetContact(this string, that string) ContactMapping {
 	db := state.State.Database
 
-	if this == "" || that == "" {
-		return ContactMapping{}, nil
+	if this == "" && that == "" {
+		panic("you must give us something to work with, jesus")
+	} else if this == "" {
+		return GetContactMappingFromOne(that)
+	} else if that == "" {
+		return GetContactMappingFromOne(this)
 	}
 
 	var lid string
@@ -412,9 +416,7 @@ func GetContact(this string, that string) ContactMapping {
 		ContactLid: lid,
 	}).First(&userContact)
 
-	if result.Error == nil {
-		return userContact, nil
-	} else {
+	if result.Error != nil {
 		db.Clauses(clause.OnConflict{DoNothing: true}).Create(&ContactMapping{
 			ContactJid: jid,
 			ContactLid: lid,
@@ -425,8 +427,39 @@ func GetContact(this string, that string) ContactMapping {
 		}).First(&userContact)
 		if result.Error != nil {
 			panic(result.Error)
-		} else {
-			return result.Model()
 		}
 	}
+
+	return userContact
+}
+
+func GetContactMappingFromOne(lidJid string) ContactMapping {
+	db := state.State.Database
+
+	var userContact ContactMapping
+	var result = db.Where(&ContactMapping{
+		ContactJid: lidJid,
+	}).First(&userContact)
+
+	if result.Error != nil {
+		result = db.Where(&ContactMapping{
+			ContactLid: lidJid,
+		}).First(&userContact)
+		if result.Error != nil {
+			// just make one with one
+			var newEntry = ContactMapping{}
+			thisParsed, _ := types.ParseJID(lidJid)
+			if thisParsed.Server == "lid" {
+				newEntry.ContactLid = thisParsed.User
+
+			} else {
+				newEntry.ContactJid = thisParsed.User
+			}
+			db.Clauses(clause.OnConflict{DoNothing: true}).Create(&newEntry)
+
+			return newEntry
+		}
+	}
+
+	return userContact
 }

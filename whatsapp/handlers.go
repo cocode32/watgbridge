@@ -168,13 +168,12 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		}
 	}
 
-	var thisSender = v.Info.Sender.User
-	var thatSender = v.Info.SenderAlt.User
-	database.GetContact(thisSender, thatSender)
+	senderContact := database.GetContact(v.Info.Sender.User, v.Info.SenderAlt.User)
+	toContact := database.GetContact(v.Info.RecipientAlt.User, v.Info.Chat.User)
 
 	if v.Info.Chat.String() == "status@broadcast" &&
 		(cfg.WhatsApp.SkipStatus ||
-			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, v.Info.MessageSource.Sender.User)) {
+			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, senderContact.ContactJid)) {
 		// Return if status is from ignored chat
 		logger.Debug("returning because status from a ignored chat",
 			zap.String("event_id", v.Info.ID),
