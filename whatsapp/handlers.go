@@ -125,20 +125,13 @@ func MessageFromMeEventHandler(text string, v *events.Message, isEdited bool) {
 	logger := state.State.Logger
 	defer logger.Sync()
 
-	var msgId string
-	if isEdited {
-		msgId = v.Message.GetProtocolMessage().GetKey().GetID()
-	} else {
-		msgId = v.Info.ID
-	}
-
-	if !isEdited {
+	if !isEdited && state.State.Config.WhatsApp.AllowEveryoneTagging {
 		// Tag everyone in the group
 		textSplit := strings.Fields(strings.ToLower(text))
 		if v.Info.IsGroup &&
 			(slices.Contains(textSplit, "@all") || slices.Contains(textSplit, "@everyone")) {
 
-			utils.WaTagAll(v.Info.Chat, v.Message, msgId, v.Info.MessageSource.Sender.String(), true)
+			utils.WaTagAll(v.Info.Chat, v.Message, v.Info.ID, v.Info.MessageSource.Sender.String(), true)
 		}
 	}
 
