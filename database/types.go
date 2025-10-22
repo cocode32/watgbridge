@@ -41,14 +41,10 @@ type ChatEphemeralSettings struct {
 }
 
 type ContactMapping struct {
-	ID              int32  `gorm:"primaryKey;autoIncrement"`
-	LegacyContactID string `gorm:"unique"`
+	ID              int32 `gorm:"primaryKey;autoIncrement"`
+	LegacyContactID string
 	ContactJid      string `gorm:"index:jid_lid,unique"`
 	ContactLid      string `gorm:"index:jid_lid,unique"`
-}
-
-type DatabaseVersion struct {
-	Verion int32 `gorm:"unique"`
 }
 
 func AutoMigrate() error {
@@ -59,6 +55,5 @@ func AutoMigrate() error {
 		&ContactName{},
 		&ChatEphemeralSettings{},
 		&ContactMapping{},
-		&DatabaseVersion{Verion: state.State.Config.DatabaseVersion},
 	)
 }

@@ -390,7 +390,7 @@ func GetContact(jidOrLid string) any {
 	}
 	db.First(&legacyContact)
 
-	if state.State.Config.DatabaseVersion <= 1 {
+	if !state.State.Config.LidWorkaround {
 		return legacyContact
 	}
 
@@ -404,8 +404,12 @@ func GetContact(jidOrLid string) any {
 	db.First(&userContactLid)
 
 	if userContactJid.ID <= 0 {
+		userContactJid.LegacyContactID = legacyContact.ID
+		db.Save(userContactJid)
 		return userContactJid
 	} else if userContactLid.ID <= 0 {
+		userContactLid.LegacyContactID = legacyContact.ID
+		db.Save(userContactJid)
 		return userContactLid
 	} else {
 		return legacyContact

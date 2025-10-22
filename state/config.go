@@ -72,8 +72,8 @@ type Config struct {
 		CreateThreadForInfoUpdates     bool     `yaml:"create_thread_for_info_updates"`
 	} `yaml:"whatsapp"`
 
-	Database        map[string]string `yaml:"database"`
-	DatabaseVersion int32             `yaml:"database_version`
+	Database      map[string]string `yaml:"database"`
+	LidWorkaround bool              `yaml:"lid_workaround"`
 }
 
 func (cfg *Config) LoadConfig() error {
