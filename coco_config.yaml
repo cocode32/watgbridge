@@ -51,7 +51,7 @@ whatsapp:
     skip_locations: false
     skip_profile_picture_updates: false
     skip_group_settings_updates: false
-    skip_chat_details: true
+    skip_chat_details: false
     send_revoked_message_updates: true
     whatsmeow_debug_mode: false
     send_my_messages_from_other_devices: false

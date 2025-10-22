@@ -180,7 +180,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			zap.String("chat_jid", v.Info.Chat.String()),
 		)
 		return
-	} else if slices.Contains(cfg.WhatsApp.IgnoreChats, v.Info.Chat.User) {
+	} else if slices.Contains(cfg.WhatsApp.IgnoreChats, toContact.ContactJid) {
 		// Return if the chat is ignored
 		logger.Debug("returning because message from an ignored chat",
 			zap.String("event_id", v.Info.ID),
@@ -416,11 +416,9 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				return
 			}
 		} else {
-			var target_chat_jid waTypes.JID
-			if v.Info.IsFromMe {
-				target_chat_jid = v.Info.Chat
-			} else {
-				target_chat_jid = v.Info.Chat
+			target_chat_jid, err := waTypes.ParseJID(toContact.ContactLid)
+			if err != nil {
+				target_chat_jid, _ = waTypes.ParseJID(toContact.ContactJid)
 			}
 
 			threadId, err = utils.TgGetOrMakeThreadFromWa(target_chat_jid.ToNonAD().String(), cfg.Telegram.TargetChatID, utils.WaGetContactName(target_chat_jid))
