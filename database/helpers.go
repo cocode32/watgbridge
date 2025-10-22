@@ -382,16 +382,23 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 	return settings.IsEphemeral, settings.EphemeralTimer, true, nil
 }
 
-func GetContact(jidOrLid string) any {
+func GetContact(jidOrLid1 string, jidOrLid2 string) any {
 	db := state.State.Database
 
-	var legacyContact = ContactName{
-		ID: jidOrLid,
+	var legacyContact1 = ContactName{
+		ID: jidOrLid1,
 	}
-	db.First(&legacyContact)
+	db.First(&legacyContact1)
+	var legacyContact2 = ContactName{
+		ID: jidOrLid2,
+	}
 
 	if !state.State.Config.LidWorkaround {
-		return legacyContact
+		if legacyContact1 != nil {
+			return legacyContact1
+		} else {
+			return legacyContact2
+		}
 	}
 
 	var userContactJid = ContactMapping{
