@@ -34,6 +34,12 @@ func WhatsAppEventHandler(evt interface{}) {
 	case *events.Receipt:
 		ReceiptEventHandler(whatsAppEvent)
 
+	case *events.PushName:
+		PushNameEventHandler(whatsAppEvent)
+
+	case *events.Message:
+		HandleWhatsAppMessage(whatsAppEvent)
+
 	case *events.Picture:
 		PictureEventHandler(whatsAppEvent)
 
@@ -43,17 +49,11 @@ func WhatsAppEventHandler(evt interface{}) {
 	case *events.GroupInfo:
 		GroupInfoEventHandler(whatsAppEvent)
 
-	case *events.PushName:
-		PushNameEventHandler(whatsAppEvent)
-
 	case *events.UserAbout:
 		UserAboutEventHandler(whatsAppEvent)
 
 	case *events.CallOffer:
 		CallOfferEventHandler(whatsAppEvent)
-
-	case *events.Message:
-		HandleWhatsAppMessage(whatsAppEvent)
 	}
 
 }
