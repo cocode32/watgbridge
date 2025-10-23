@@ -209,41 +209,10 @@ func main() {
 			)
 		}
 	}
-	_ = logger.Sync()
+	logger.Sync()
 
-	startMessageSuccessful := false
-
-	{
-		isRestarted, found := os.LookupEnv("WATG_IS_RESTARTED")
-		if !found || isRestarted != "1" {
-			goto SKIP_RESTART
-		}
-
-		chatIdString, chatIdFound := os.LookupEnv("WATG_CHAT_ID")
-		msgIdString, msgIdFound := os.LookupEnv("WATG_MESSAGE_ID")
-		if !chatIdFound || !msgIdFound {
-			goto SKIP_RESTART
-		}
-
-		chatId, chatIdSuccess := strconv.ParseInt(chatIdString, 10, 64)
-		msgId, msgIdSuccess := strconv.ParseInt(msgIdString, 10, 64)
-		if chatIdSuccess != nil || msgIdSuccess != nil {
-			goto SKIP_RESTART
-		}
-
-		opts := gotgbot.SendMessageOpts{
-			ReplyParameters: &gotgbot.ReplyParameters{
-				MessageId: msgId,
-			},
-		}
-
-		state.State.TelegramBot.SendMessage(chatId, "Successfully restarted", &opts)
-		startMessageSuccessful = true
-	}
-SKIP_RESTART:
-
-	if !startMessageSuccessful && !cfg.Telegram.SkipStartupMessage {
-		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully started WaTgBridge", &gotgbot.SendMessageOpts{})
+	if !cfg.Telegram.SkipStartupMessage {
+		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully started Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
 	}
 
 	state.State.TelegramUpdater.Idle()
