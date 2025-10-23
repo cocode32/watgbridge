@@ -1116,3 +1116,30 @@ func SendMessageConfirmation(
 		}
 	}
 }
+
+func SendMessageDeliveredConfirmation(
+	b *gotgbot.Bot,
+	msgToForward *gotgbot.Message,
+) {
+	b.SetMessageReaction(
+		msgToForward.Chat.Id,
+		msgToForward.MessageId,
+		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
+	)
+	//switch cfg.Telegram.ConfirmationType {
+	//case "emoji":
+	//	b.SetMessageReaction(
+	//		msgToForward.Chat.Id,
+	//		msgToForward.MessageId,
+	//		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
+	//	)
+	//case "text":
+	//	msg, err := TgReplyTextByContext(b, c, "Message delivered to device", nil, cfg.Telegram.SilentConfirmation)
+	//	if err == nil {
+	//		go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
+	//			time.Sleep(15 * time.Second)
+	//			_b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+	//		}(b, msg)
+	//	}
+	//}
+}

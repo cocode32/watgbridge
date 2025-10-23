@@ -7,9 +7,9 @@ import (
 )
 
 type CocoContact struct {
-	ID           int32   `gorm:"primaryKey;autoIncrement"`
-	Lid          *string `gorm:"index:jid_lid,unique"`
-	Jid          *string `gorm:"index:jid_lid,unique"`
+	ID           int32  `gorm:"primaryKey;autoIncrement"`
+	Lid          string `gorm:"index:jid_lid,unique"`
+	Jid          string `gorm:"index:jid_lid,unique"`
 	Name         string
 	FullName     string
 	PushName     string

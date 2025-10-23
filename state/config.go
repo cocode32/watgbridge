@@ -32,7 +32,6 @@ type Config struct {
 		SendMyReadReceipts  bool    `yaml:"send_my_read_receipts"`
 		SilentConfirmation  bool    `yaml:"silent_confirmation"`
 		ConfirmationType    string  `yaml:"confirmation_type"`
-		EmojiConfirmation   *bool   `yaml:"emoji_confirmation"`
 		SkipStartupMessage  bool    `yaml:"skip_startup_message"`
 		SpoilerViewOnce     bool    `yaml:"spoiler_as_viewonce"`
 		Reactions           bool    `yaml:"reactions"`

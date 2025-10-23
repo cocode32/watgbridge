@@ -107,12 +107,11 @@ func HandleWhatsAppMessage(event *events.Message) {
 
 func HistorySyncHandler(event *events.HistorySync) {
 	// cool, we have chatted to people in the past, let's get already known lids and jids
-	if event.Data.SyncType != nil && *event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME {
-		// this will contiain the already known pn and lid mappings
+	if event.Data.SyncType != nil && (*event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME || *event.Data.SyncType == waHistorySync.HistorySync_RECENT || *event.Data.SyncType == waHistorySync.HistorySync_INITIAL_BOOTSTRAP) {
 		for _, mapping := range event.Data.PhoneNumberToLidMappings {
-			state.State.Database.Clauses(clause.OnConflict{DoNothing: true}).Create(&database.ContactMapping{
-				ContactJid: *mapping.PnJID,
-				ContactLid: *mapping.LidJID,
+			state.State.Database.Clauses(clause.OnConflict{DoNothing: true}).Create(&database.CocoContact{
+				Jid: *mapping.PnJID,
+				Lid: *mapping.LidJID,
 			})
 		}
 	}
@@ -1279,11 +1278,8 @@ func CallOfferEventHandler(v *events.CallOffer) {
 }
 
 func ReceiptEventHandler(v *events.Receipt) {
-	if v.Type == waTypes.ReceiptTypeReadSelf {
-		for _, msgId := range v.MessageIDs {
-			database.MsgIdMarkRead(v.Chat.String(), msgId)
-		}
-	}
+	// I want to react here, but need to figure out the message context
+	//utils.SendMessageDeliveredConfirmation(state.State.TelegramBot, state.State.Config.Telegram.TargetChatID)
 }
 
 func PushNameEventHandler(v *events.PushName) {
