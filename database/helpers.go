@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"watgbridge/utils"
 
 	"watgbridge/state"
 
@@ -275,7 +274,7 @@ func CocoContactUpdatePushName(chatId string, senderAltId string, pushName strin
 
 	db := state.State.Database
 
-	jid, lid := utils.GetJidLid(chatId, senderAltId)
+	jid, lid := GetJidLid(chatId, senderAltId)
 
 	contact, found := FindCocoContact(jid, lid)
 	if !found {
@@ -511,4 +510,28 @@ func FindCocoContact(jid string, lid string) (CocoContact, bool) {
 		return userContact, false
 	}
 	return userContact, true
+}
+
+// GetJidLid IDK how to put this in utils, so it's gonna live here
+func GetJidLid(chatId string, altId string) (string, string) {
+	lid := ""
+	jid := ""
+	chat, _ := types.ParseJID(chatId)
+	if chat.Server == "lid" {
+		lid = chat.User
+	} else {
+		jid = chat.User
+	}
+
+	alt, _ := types.ParseJID(altId)
+	if alt.Server == "lid" {
+		if lid != "" {
+			panic("both id's were lids...")
+		}
+		lid = alt.User
+	} else {
+		jid = alt.User
+	}
+
+	return jid, lid
 }
