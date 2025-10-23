@@ -21,6 +21,9 @@ I don't currently have time to make this backwards compatible for all the users 
 >
 > The database has been completely redone as a result of my attempt to gain sanity back in my life.
 
+## Database Changes
+All the `"new"` database tables are prefixed with `Coco`. Just so that I can keep sanity
+
 # License Changes
 
 This project is a fork of [watgbridge](https://github.com/akshettrj/watgbridge), originally licensed under the MIT License.
