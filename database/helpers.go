@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"watgbridge/utils"
 
 	"watgbridge/state"
 
@@ -267,6 +268,26 @@ func ContactGetAll() (map[string]ContactName, error) {
 	return results, res.Error
 }
 
+func CocoContactUpdatePushName(chatId string, senderAltId string, pushName string) error {
+	if pushName == "" {
+		return nil
+	}
+
+	db := state.State.Database
+
+	jid, lid := utils.GetJidLid(chatId, senderAltId)
+
+	contact, found := FindCocoContact(jid, lid)
+	if !found {
+		return nil
+	}
+
+	contact.PushName = pushName
+	var res = db.Save(&contact)
+
+	return res.Error
+}
+
 func ContactUpdatePushName(waUserId, pushName string) error {
 	if pushName == "" {
 		return nil
@@ -462,4 +483,32 @@ func GetContactMappingFromOne(lidJid string) ContactMapping {
 	}
 
 	return userContact
+}
+
+func FindCocoContact(jid string, lid string) (CocoContact, bool) {
+	db := state.State.Database
+
+	var userContact CocoContact
+	var result = db.Where(&CocoContact{
+		Jid: jid,
+		Lid: lid,
+	}).First(&userContact)
+
+	if result.Error == nil {
+		return userContact, true
+	}
+	db.Create(&CocoContact{
+		Jid: jid,
+		Lid: lid,
+	})
+
+	result = db.Where(&CocoContact{
+		Jid: jid,
+		Lid: lid,
+	}).First(&userContact)
+
+	if result.Error != nil {
+		return userContact, false
+	}
+	return userContact, true
 }
