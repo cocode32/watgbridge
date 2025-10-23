@@ -26,8 +26,6 @@ import (
 
 func WhatsAppEventHandler(evt interface{}) {
 
-	cfg := state.State.Config
-
 	switch whatsAppEvent := evt.(type) {
 
 	case *events.LoggedOut:
@@ -37,17 +35,13 @@ func WhatsAppEventHandler(evt interface{}) {
 		ReceiptEventHandler(whatsAppEvent)
 
 	case *events.Picture:
-		if !cfg.WhatsApp.SkipProfilePictureUpdates {
-			PictureEventHandler(whatsAppEvent)
-		}
+		PictureEventHandler(whatsAppEvent)
 
 	case *events.HistorySync:
 		HistorySyncHandler(whatsAppEvent)
 
 	case *events.GroupInfo:
-		if !cfg.WhatsApp.SkipGroupSettingsUpdates {
-			GroupInfoEventHandler(whatsAppEvent)
-		}
+		GroupInfoEventHandler(whatsAppEvent)
 
 	case *events.PushName:
 		PushNameEventHandler(whatsAppEvent)
@@ -1418,6 +1412,10 @@ func PictureEventHandler(v *events.Picture) {
 	)
 	defer logger.Sync()
 
+	if cfg.WhatsApp.SkipProfilePictureUpdates {
+		return
+	}
+
 	tgThreadId, threadFound, err := database.ChatThreadGetTgFromWa(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
 	if err != nil {
 		logger.Warn(
@@ -1555,6 +1553,10 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 		tgBot  = state.State.TelegramBot
 	)
 	defer logger.Sync()
+
+	if cfg.WhatsApp.SkipGroupSettingsUpdates {
+		return
+	}
 
 	tgThreadId, threadFound, err := database.ChatThreadGetTgFromWa(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
 	if err != nil {
