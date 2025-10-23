@@ -28,84 +28,87 @@ func WhatsAppEventHandler(evt interface{}) {
 
 	cfg := state.State.Config
 
-	switch v := evt.(type) {
+	switch whatsAppEvent := evt.(type) {
 
 	case *events.LoggedOut:
-		LogoutHandler(v)
+		LogoutHandler(whatsAppEvent)
 
 	case *events.Receipt:
-		ReceiptEventHandler(v)
+		ReceiptEventHandler(whatsAppEvent)
 
 	case *events.Picture:
 		if !cfg.WhatsApp.SkipProfilePictureUpdates {
-			PictureEventHandler(v)
+			PictureEventHandler(whatsAppEvent)
 		}
 
 	case *events.HistorySync:
-		HistorySyncHandler(v)
+		HistorySyncHandler(whatsAppEvent)
 
 	case *events.GroupInfo:
 		if !cfg.WhatsApp.SkipGroupSettingsUpdates {
-			GroupInfoEventHandler(v)
+			GroupInfoEventHandler(whatsAppEvent)
 		}
 
 	case *events.PushName:
-		PushNameEventHandler(v)
+		PushNameEventHandler(whatsAppEvent)
 
 	case *events.UserAbout:
-		UserAboutEventHandler(v)
+		UserAboutEventHandler(whatsAppEvent)
 
 	case *events.CallOffer:
-		CallOfferEventHandler(v)
+		CallOfferEventHandler(whatsAppEvent)
 
 	case *events.Message:
+		HandleWhatsAppMessage(whatsAppEvent)
+	}
 
-		isEdited := false
-		if protoMsg := v.Message.GetProtocolMessage(); protoMsg != nil &&
-			protoMsg.GetType() == waE2E.ProtocolMessage_MESSAGE_EDIT {
-			isEdited = true
-		}
+}
 
-		if protoMsg := v.Message.GetProtocolMessage(); protoMsg != nil &&
-			protoMsg.GetType() == waE2E.ProtocolMessage_REVOKE {
-			RevokedMessageEventHandler(v)
-			return
-		}
+func HandleWhatsAppMessage(event *events.Message) {
+	isEdited := false
+	if protoMsg := event.Message.GetProtocolMessage(); protoMsg != nil &&
+		protoMsg.GetType() == waE2E.ProtocolMessage_MESSAGE_EDIT {
+		isEdited = true
+	}
 
-		if protoMsg := v.Message.GetProtocolMessage(); protoMsg != nil &&
-			protoMsg.GetType() == waE2E.ProtocolMessage_EPHEMERAL_SETTING {
-			if protoMsg.GetEphemeralExpiration() == 0 {
-				database.UpdateEphemeralSettings(v.Info.Chat.ToNonAD().String(), false, 0)
-			} else {
-				database.UpdateEphemeralSettings(v.Info.Chat.ToNonAD().String(), true, protoMsg.GetEphemeralExpiration())
-			}
+	if protoMsg := event.Message.GetProtocolMessage(); protoMsg != nil &&
+		protoMsg.GetType() == waE2E.ProtocolMessage_REVOKE {
+		RevokedMessageEventHandler(event)
+		return
+	}
 
-			return
-		}
-
-		text := ""
-		if isEdited {
-			msg := v.Message.GetProtocolMessage().GetEditedMessage()
-			if extendedMessageText := msg.GetExtendedTextMessage().GetText(); extendedMessageText != "" {
-				text = extendedMessageText
-			} else {
-				text = msg.GetConversation()
-			}
+	if protoMsg := event.Message.GetProtocolMessage(); protoMsg != nil &&
+		protoMsg.GetType() == waE2E.ProtocolMessage_EPHEMERAL_SETTING {
+		if protoMsg.GetEphemeralExpiration() == 0 {
+			database.UpdateEphemeralSettings(event.Info.Chat.ToNonAD().String(), false, 0)
 		} else {
-			if extendedMessageText := v.Message.GetExtendedTextMessage().GetText(); extendedMessageText != "" {
-				text = extendedMessageText
-			} else {
-				text = v.Message.GetConversation()
-			}
+			database.UpdateEphemeralSettings(event.Info.Chat.ToNonAD().String(), true, protoMsg.GetEphemeralExpiration())
 		}
 
-		if v.Info.IsFromMe {
-			MessageFromMeEventHandler(text, v, isEdited)
+		return
+	}
+
+	text := ""
+	if isEdited {
+		msg := event.Message.GetProtocolMessage().GetEditedMessage()
+		if extendedMessageText := msg.GetExtendedTextMessage().GetText(); extendedMessageText != "" {
+			text = extendedMessageText
 		} else {
-			MessageFromOthersEventHandler(text, v, isEdited)
+			text = msg.GetConversation()
+		}
+	} else {
+		if extendedMessageText := event.Message.GetExtendedTextMessage().GetText(); extendedMessageText != "" {
+			text = extendedMessageText
+		} else {
+			text = event.Message.GetConversation()
 		}
 	}
 
+	if event.Info.IsFromMe {
+		MessageFromMeEventHandler(text, event, isEdited)
+	} else {
+		MessageFromOthersEventHandler(text, event, isEdited)
+	}
 }
 
 func HistorySyncHandler(event *events.HistorySync) {
