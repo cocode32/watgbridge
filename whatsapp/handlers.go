@@ -1292,7 +1292,7 @@ func PushNameEventHandler(v *events.PushName) {
 		zap.String("new_push_name", v.NewPushName),
 	)
 
-	database.CocoContactUpdatePushName(v.Message.Chat.String(), v.Message.SenderAlt.String(), v.NewPushName)
+	database.CocoContactUpdatePushName(v.Message.Sender.String(), v.Message.SenderAlt.String(), v.NewPushName)
 }
 
 func UserAboutEventHandler(v *events.UserAbout) {
