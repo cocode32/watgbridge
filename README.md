@@ -1,8 +1,25 @@
+# ⚠️ Disclaimer
+This project is provided as-is and without any warranty or guarantee of any kind.
+Use it entirely at your own risk.
+
+The maintainers and contributors are not responsible for any damages, losses, account suspensions, bans, or other consequences that may arise from the use of this software.
+
+Some platforms or services (such as WhatsApp or similar messaging systems) may restrict or prohibit automated or third-party interactions. You are solely responsible for ensuring that your use of this project complies with all applicable terms of service and laws.
+By using or distributing this software, you acknowledge that:
+- You understand the potential risks involved.
+- You accept full responsibility for any actions or outcomes resulting from its use.
+
 # coco_sanity changes
 
 I've kept the original README.md intact below. I'm adding additional information here for anyone that would like to use this instead of the original.
 
 I don't currently have time to make this backwards compatible for all the users of the original `watgbridge`. So, if someone wants to cherry pick commits from this branch, to merge it into the original; please go ahead.
+
+> ⚠️
+>
+> DO NOT USE THIS ON EXISTING DATABASE
+>
+> The database has been completely redone as a result of my attempt to gain sanity back in my life.
 
 # License Changes
 
