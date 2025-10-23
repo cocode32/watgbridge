@@ -22,7 +22,6 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
-	"gorm.io/gorm/clause"
 )
 
 func WhatsAppEventHandler(evt interface{}) {
@@ -63,7 +62,9 @@ func WhatsAppEventHandler(evt interface{}) {
 }
 
 func ConnectedHandler() {
-	//InitialSyncContactsHandler()
+	// TODO this is very shitty, but I'll fix it later
+	time.Sleep(45 * time.Second)
+	InitialSyncContactsHandler()
 	// There seems to be a race condition with doing this here
 }
 
@@ -115,19 +116,19 @@ func HandleWhatsAppMessage(event *events.Message) {
 }
 
 func HistorySyncHandler(event *events.HistorySync) {
-	if state.State.WhatsAppClient.IsConnected() {
-		InitialSyncContactsHandler()
-	}
+	//if state.State.WhatsAppClient.IsConnected() {
+	//	InitialSyncContactsHandler()
+	//}
 
 	// cool, we have chatted to people in the past, let's get already known lids and jids
 	if event.Data.SyncType != nil && (*event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME || *event.Data.SyncType == waHistorySync.HistorySync_RECENT || *event.Data.SyncType == waHistorySync.HistorySync_INITIAL_BOOTSTRAP) {
 		for _, mapping := range event.Data.PhoneNumberToLidMappings {
 			jid, _ := waTypes.ParseJID(*mapping.PnJID)
 			lid, _ := waTypes.ParseJID(*mapping.LidJID)
-			state.State.Database.Clauses(clause.OnConflict{DoNothing: true}).Create(&database.CocoContact{
-				Jid: jid.ToNonAD().String(),
-				Lid: lid.ToNonAD().String(),
-			})
+			_, found := database.FindCocoContact(jid.ToNonAD().String(), lid.ToNonAD().String())
+			if !found {
+				database.CreateCocoContact(jid.ToNonAD().String(), lid.ToNonAD().String())
+			}
 		}
 	}
 }
