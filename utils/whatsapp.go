@@ -110,7 +110,7 @@ func WaGetGroupName(jid types.JID) string {
 }
 
 func WaGetContactName(waId types.JID) string {
-	cocoContact, found := database.FindCocoContactSingleId(waId.String())
+	cocoContact, found, isJid, isLid := database.FindCocoContactSingleId(waId.String())
 	if !found {
 		jid := waId
 		if jid.ToNonAD() == state.State.WhatsAppClient.Store.ID.ToNonAD() {
@@ -153,13 +153,12 @@ func WaGetContactName(waId types.JID) string {
 		return name
 	}
 	var name string
-	jid := cocoContact.Jid
-
-	if jid == "" {
-		jid = cocoContact.Lid
+	var jid string
+	if isJid {
+		jid = cocoContact.Jid
 	}
-	if jid == "" {
-		jid = "Unknown-Number"
+	if isLid {
+		jid = cocoContact.Lid
 	}
 
 	if cocoContact.FullName != "" {

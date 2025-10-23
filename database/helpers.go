@@ -138,10 +138,15 @@ func GetChatThread(waChatId string) (CocoChatThread, bool) {
 	db := state.State.Database
 
 	var chatThread CocoChatThread
-	cocoContact, found := FindCocoContactSingleId(waChatId)
+	cocoContact, found, isJid, isLid := FindCocoContactSingleId(waChatId)
 
 	if !found {
-		return chatThread, false
+		if isJid {
+			cocoContact, _ = CreateCocoContactJid(waChatId)
+		}
+		if isLid {
+			cocoContact, _ = CreateCocoContactLid(waChatId)
+		}
 	}
 
 	var result = db.Where(&CocoChatThread{
@@ -197,7 +202,7 @@ func ChatThreadGetAllPairs() ([]CocoChatThread, error) {
 func ContactNameAddNew(waUserId, firstName, fullName, pushName, businessName string) error {
 	db := state.State.Database
 
-	contact, found := FindCocoContactSingleId(waUserId)
+	contact, found, _, _ := FindCocoContactSingleId(waUserId)
 	if !found {
 		panic("to be honest, if we didn't find or create the contact before, now it's all fucking broken")
 	}
@@ -245,7 +250,7 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]types.ContactInfo) error 
 }
 
 func ContactNameGet(waUserId string) (string, string, string, string, error) {
-	contact, found := FindCocoContactSingleId(waUserId)
+	contact, found, _, _ := FindCocoContactSingleId(waUserId)
 
 	if !found {
 		return "", "", "", "", errors.New("contact not found")
@@ -340,27 +345,25 @@ func FindCocoContact(jid string, lid string) (CocoContact, bool) {
 		Lid: lid,
 	}).First(&userContact)
 
-	if result.Error == nil {
-		return userContact, true
-	}
-	db.Create(&CocoContact{
-		Jid: jid,
-		Lid: lid,
-	})
-
-	result = db.Where(&CocoContact{
-		Jid: jid,
-		Lid: lid,
-	}).First(&userContact)
-
-	if result.Error != nil {
-		return userContact, false
-	}
-	return userContact, true
+	return userContact, result.Error == nil
 }
 
-func FindCocoContactSingleId(idFromWhatsmeow string) (CocoContact, bool) {
+func CreateCocoContact(jid string, lid string) (CocoContact, bool) {
 	db := state.State.Database
+
+	userContact := CocoContact{
+		Jid: jid,
+		Lid: lid,
+	}
+	result := db.Create(&userContact)
+
+	return userContact, result.Error == nil
+}
+
+func FindCocoContactSingleId(idFromWhatsmeow string) (CocoContact, bool, bool, bool) {
+	db := state.State.Database
+
+	_, lid := GetJidOrLid(idFromWhatsmeow)
 
 	var userContact CocoContact
 	var result = db.Where(&CocoContact{
@@ -369,31 +372,27 @@ func FindCocoContactSingleId(idFromWhatsmeow string) (CocoContact, bool) {
 		Lid: idFromWhatsmeow,
 	}).First(&userContact)
 
-	if result.Error == nil {
-		return userContact, true
+	return userContact, result.Error == nil, lid == "", lid != ""
+}
+
+func CreateCocoContactJid(id string) (CocoContact, bool) {
+	db := state.State.Database
+
+	userContact := CocoContact{
+		Jid: id,
 	}
+	result := db.Create(&userContact)
 
-	// create the damn thing
-	jid, lid := GetJidOrLid(idFromWhatsmeow)
-	if lid == "" {
-		db.Create(&CocoContact{
-			Jid: jid,
-		})
+	return userContact, result.Error == nil
+}
 
-		result = db.Where(&CocoContact{
-			Jid: jid,
-		}).First(&userContact)
+func CreateCocoContactLid(id string) (CocoContact, bool) {
+	db := state.State.Database
 
-		return userContact, result.Error == nil
+	userContact := CocoContact{
+		Lid: id,
 	}
-
-	db.Create(&CocoContact{
-		Lid: lid,
-	})
-
-	result = db.Where(&CocoContact{
-		Lid: lid,
-	}).First(&userContact)
+	result := db.Create(&userContact)
 
 	return userContact, result.Error == nil
 }
