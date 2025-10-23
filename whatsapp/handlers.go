@@ -1263,9 +1263,9 @@ func CallOfferEventHandler(v *events.CallOffer) {
 	)
 
 	// TODO : Check and handle group calls
-	callerName := utils.WaGetContactName(v.CallCreator)
+	callerName := utils.WaGetContactName(v.From)
 
-	callThreadId, err := utils.TgGetOrMakeThreadFromWa("calls", "Calls")
+	callThreadId, err := utils.TgGetOrMakeThreadFromWa("calls@broadcast", "Calls")
 	if err != nil {
 		utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retreive corresponding thread id for calls", err)
 		return
