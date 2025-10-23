@@ -164,19 +164,20 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		}
 	}
 
-	senderContact := database.GetContact(v.Info.Sender.User, v.Info.SenderAlt.User)
-	toContact := database.GetContact(v.Info.RecipientAlt.User, v.Info.Chat.User)
+	// TODO come back here
+	//senderContact := database.GetContact(v.Info.Sender.User, v.Info.SenderAlt.User)
+	//toContact := database.GetContact(v.Info.RecipientAlt.User, v.Info.Chat.User)
 
 	if v.Info.Chat.String() == "status@broadcast" &&
 		(cfg.WhatsApp.SkipStatus ||
-			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, senderContact.ContactJid)) {
+			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, "// TODO come back here")) {
 		// Return if status is from ignored chat
 		logger.Debug("returning because status from a ignored chat",
 			zap.String("event_id", v.Info.ID),
 			zap.String("chat_jid", v.Info.Chat.String()),
 		)
 		return
-	} else if slices.Contains(cfg.WhatsApp.IgnoreChats, toContact.ContactJid) {
+	} else if slices.Contains(cfg.WhatsApp.IgnoreChats, "// TODO come back here") {
 		// Return if the chat is ignored
 		logger.Debug("returning because message from an ignored chat",
 			zap.String("event_id", v.Info.ID),
@@ -412,10 +413,12 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				return
 			}
 		} else {
-			target_chat_jid, err := waTypes.ParseJID(toContact.ContactLid)
-			if err != nil {
-				target_chat_jid, _ = waTypes.ParseJID(toContact.ContactJid)
-			}
+			// TODO come back here
+			//target_chat_jid, err := waTypes.ParseJID(toContact.ContactLid)
+			//if err != nil {
+			//	target_chat_jid, _ = waTypes.ParseJID(toContact.ContactJid)
+			//}
+			target_chat_jid := v.Info.Chat
 
 			threadId, err = utils.TgGetOrMakeThreadFromWa(target_chat_jid.ToNonAD().String(), cfg.Telegram.TargetChatID, utils.WaGetContactName(target_chat_jid))
 			if err != nil {
