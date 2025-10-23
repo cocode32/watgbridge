@@ -15,6 +15,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2"
 	goVCard "github.com/emersion/go-vcard"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/appstate"
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/proto/waHistorySync"
 	waTypes "go.mau.fi/whatsmeow/types"
@@ -27,6 +28,9 @@ import (
 func WhatsAppEventHandler(evt interface{}) {
 
 	switch whatsAppEvent := evt.(type) {
+
+	case *events.Connected:
+		ConnectedHandler()
 
 	case *events.LoggedOut:
 		LogoutHandler(whatsAppEvent)
@@ -56,6 +60,10 @@ func WhatsAppEventHandler(evt interface{}) {
 		CallOfferEventHandler(whatsAppEvent)
 	}
 
+}
+
+func ConnectedHandler() {
+	InitialSyncContactsHandler()
 }
 
 func HandleWhatsAppMessage(event *events.Message) {
@@ -1871,4 +1879,40 @@ func LogoutHandler(v *events.LoggedOut) {
 	updateText += fmt.Sprintf("<b>Reason:</b> %s", html.EscapeString(v.Reason.String()))
 
 	utils.TgSendTextById(tgBot, cfg.Telegram.OwnerID, 0, updateText)
+}
+
+func InitialSyncContactsHandler() {
+	waClient := state.State.WhatsAppClient
+	waClient.IsConnected()
+	logger := state.State.Logger
+
+	logger.Info(
+		"Starting syncing contacts... may take some time",
+	)
+
+	err := waClient.FetchAppState(context.Background(), appstate.WAPatchCriticalUnblockLow, false, false)
+	if err != nil {
+		logger.Error(
+			"Failed to sync contacts",
+			zap.Error(err),
+		)
+		return
+	}
+
+	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
+	if err == nil {
+		err = database.ContactNameBulkAddOrUpdate(contacts)
+	}
+	if err != nil {
+		logger.Error(
+			"Something broke when we tried to insert the contacts into the database",
+			zap.Error(err),
+		)
+		return
+	}
+
+	logger.Info(
+		"Successfully synced the contact list",
+	)
+	return
 }

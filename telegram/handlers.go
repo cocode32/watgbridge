@@ -309,7 +309,10 @@ func SyncContactsHandler(b *gotgbot.Bot, c *ext.Context) error {
 
 	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
 	if err == nil {
-		database.ContactNameBulkAddOrUpdate(contacts)
+		err = database.ContactNameBulkAddOrUpdate(contacts)
+	}
+	if err != nil {
+		_, err = utils.TgReplyTextByContext(b, c, "Something broke when we tried to insert the contacts into the database", nil, false)
 	}
 
 	_, err = utils.TgReplyTextByContext(b, c, "Successfully synced the contact list", nil, false)
