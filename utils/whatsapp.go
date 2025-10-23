@@ -28,8 +28,7 @@ func WaParseJID(s string) (types.JID, bool) {
 	}
 
 	recipient, err := types.ParseJID(s)
-
-	recipient = recipient.ToNonAD()
+	
 	if err != nil || recipient.User == "" {
 		return recipient, false
 	}
