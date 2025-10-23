@@ -6,7 +6,6 @@ import (
 	"watgbridge/state"
 
 	"go.mau.fi/whatsmeow/types"
-	"gorm.io/gorm/clause"
 )
 
 func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgChatId, tgMsgId, tgThreadId int64) error {
@@ -401,87 +400,6 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 	}
 
 	return settings.IsEphemeral, settings.EphemeralTimer, true, nil
-}
-
-func GetContact(this string, that string) ContactMapping {
-	db := state.State.Database
-
-	if this == "" && that == "" {
-		panic("you must give us something to work with, jesus")
-	} else if this == "" {
-		return GetContactMappingFromOne(that)
-	} else if that == "" {
-		return GetContactMappingFromOne(this)
-	}
-
-	var lid string
-	var jid string
-
-	thisParsed, _ := types.ParseJID(this)
-	if thisParsed.Server == "lid" {
-		lid = thisParsed.User
-	} else {
-		jid = thisParsed.User
-	}
-	thatParsed, _ := types.ParseJID(that)
-	if thatParsed.Server == "lid" {
-		lid = thatParsed.User
-	} else {
-		jid = thatParsed.User
-	}
-
-	var userContact ContactMapping
-	var result = db.Where(&ContactMapping{
-		ContactJid: jid,
-		ContactLid: lid,
-	}).First(&userContact)
-
-	if result.Error != nil {
-		db.Clauses(clause.OnConflict{DoNothing: true}).Create(&ContactMapping{
-			ContactJid: jid,
-			ContactLid: lid,
-		})
-		var result = db.Where(&ContactMapping{
-			ContactJid: jid,
-			ContactLid: lid,
-		}).First(&userContact)
-		if result.Error != nil {
-			panic(result.Error)
-		}
-	}
-
-	return userContact
-}
-
-func GetContactMappingFromOne(lidJid string) ContactMapping {
-	db := state.State.Database
-
-	var userContact ContactMapping
-	var result = db.Where(&ContactMapping{
-		ContactJid: lidJid,
-	}).First(&userContact)
-
-	if result.Error != nil {
-		result = db.Where(&ContactMapping{
-			ContactLid: lidJid,
-		}).First(&userContact)
-		if result.Error != nil {
-			// just make one with one
-			var newEntry = ContactMapping{}
-			thisParsed, _ := types.ParseJID(lidJid)
-			if thisParsed.Server == "lid" {
-				newEntry.ContactLid = thisParsed.User
-
-			} else {
-				newEntry.ContactJid = thisParsed.User
-			}
-			db.Clauses(clause.OnConflict{DoNothing: true}).Create(&newEntry)
-
-			return newEntry
-		}
-	}
-
-	return userContact
 }
 
 func FindCocoContact(jid string, lid string) (CocoContact, bool) {
