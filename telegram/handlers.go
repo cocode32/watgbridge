@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"watgbridge/database"
-	"watgbridge/database/CocoChatThreadDb"
 	"watgbridge/state"
 	"watgbridge/utils"
 
