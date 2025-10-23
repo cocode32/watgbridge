@@ -116,15 +116,51 @@ func MsgIdDropAllPairs() error {
 }
 
 func AddNewChatThread(waChatId string, tgThreadId int64) error {
+	db := state.State.Database
 
+	cocoChatThread, found := GetChatThread(waChatId)
+	if found {
+		cocoChatThread.ThreadId = tgThreadId
+		var res = db.Save(&cocoChatThread)
+		return res.Error
+	}
+
+	cocoContact, found, isJid, isLid := FindCocoContactSingleId(waChatId)
+	if isJid {
+		cocoContact, _ = CreateCocoContactJid(waChatId)
+	}
+	if isLid {
+		cocoContact, _ = CreateCocoContactLid(waChatId)
+	}
+
+	var res = db.Create(&CocoChatThread{
+		CocoContactId: cocoContact.ID,
+		ThreadId:      tgThreadId,
+	})
+	return res.Error
+}
+
+func AddNewChatThreadWithPush(waChatId string, tgThreadId int64, pushName string) error {
 	db := state.State.Database
 
 	var chatThread CocoChatThread
-	cocoContact, found := GetChatThread(waChatId)
+	var cocoContact CocoContact
+	cocoChatThread, found := GetChatThread(waChatId)
 	if found {
 		chatThread.ThreadId = tgThreadId
-		var res = db.Save(&chatThread)
-		return res.Error
+		cocoContact, _ = FindCocoContactById(cocoChatThread.CocoContactId)
+		cocoContact.PushName = pushName
+		var threadRes = db.Save(&chatThread)
+		var contactRes = db.Create(&cocoContact)
+		return errors.Join(threadRes.Error, contactRes.Error)
+	}
+
+	cocoContact, found, isJid, isLid := FindCocoContactSingleId(waChatId)
+	if isJid {
+		cocoContact, _ = CreateCocoContactJid(waChatId)
+	}
+	if isLid {
+		cocoContact, _ = CreateCocoContactLid(waChatId)
 	}
 
 	var res = db.Create(&CocoChatThread{
@@ -138,15 +174,10 @@ func GetChatThread(waChatId string) (CocoChatThread, bool) {
 	db := state.State.Database
 
 	var chatThread CocoChatThread
-	cocoContact, found, isJid, isLid := FindCocoContactSingleId(waChatId)
+	cocoContact, found, _, _ := FindCocoContactSingleId(waChatId)
 
 	if !found {
-		if isJid {
-			cocoContact, _ = CreateCocoContactJid(waChatId)
-		}
-		if isLid {
-			cocoContact, _ = CreateCocoContactLid(waChatId)
-		}
+		return chatThread, false
 	}
 
 	var result = db.Where(&CocoChatThread{
@@ -334,6 +365,17 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 	}
 
 	return settings.IsEphemeral, settings.EphemeralTimer, true, nil
+}
+
+func FindCocoContactById(id int32) (CocoContact, bool) {
+	db := state.State.Database
+
+	var userContact CocoContact
+	var result = db.Where(&CocoContact{
+		ID: id,
+	}).First(&userContact)
+
+	return userContact, result.Error == nil
 }
 
 func FindCocoContact(jid string, lid string) (CocoContact, bool) {

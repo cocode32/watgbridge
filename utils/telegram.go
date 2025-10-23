@@ -41,7 +41,7 @@ func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error
 	return err
 }
 
-func TgGetOrMakeThreadFromWa(waChatId string, threadName string) (int64, error) {
+func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (int64, error) {
 	cocoChatThread, threadFound := database.GetChatThread(waChatId)
 
 	if !threadFound {
@@ -50,7 +50,7 @@ func TgGetOrMakeThreadFromWa(waChatId string, threadName string) (int64, error) 
 		if err != nil {
 			return 0, err
 		}
-		err = database.AddNewChatThread(waChatId, newForum.MessageThreadId)
+		err = database.AddNewChatThreadWithPush(waChatId, newForum.MessageThreadId, name)
 		return newForum.MessageThreadId, err
 	}
 
