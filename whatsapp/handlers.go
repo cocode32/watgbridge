@@ -1312,7 +1312,7 @@ func UserAboutEventHandler(v *events.UserAbout) {
 		zap.Time("updated_at", v.Timestamp),
 	)
 
-	tgThreadId, threadFound, err := database.ChatThreadGetTgFromWa(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
+	tgThreadId, threadFound, err := database.GetChatThread(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
 	if err != nil {
 		logger.Warn(
 			"failed to find thread for a WhatsApp chat (handling UserAbout event)",
@@ -1415,7 +1415,7 @@ func PictureEventHandler(v *events.Picture) {
 		return
 	}
 
-	tgThreadId, threadFound, err := database.ChatThreadGetTgFromWa(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
+	tgThreadId, threadFound, err := database.GetChatThread(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
 	if err != nil {
 		logger.Warn(
 			"failed to find thread for a WhatsApp chat (handling Picture event)",
@@ -1557,7 +1557,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 		return
 	}
 
-	tgThreadId, threadFound, err := database.ChatThreadGetTgFromWa(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
+	tgThreadId, threadFound, err := database.GetChatThread(v.JID.ToNonAD().String(), cfg.Telegram.TargetChatID)
 	if err != nil {
 		logger.Warn(
 			"failed to find thread for a WhatsApp chat (handling GroupInfo event)",

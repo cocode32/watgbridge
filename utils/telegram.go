@@ -42,7 +42,7 @@ func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error
 }
 
 func TgGetOrMakeThreadFromWa(waChatId string, tgChatId int64, threadName string) (int64, error) {
-	threadId, threadFound, err := database.ChatThreadGetTgFromWa(waChatId, tgChatId)
+	threadId, threadFound, err := database.GetChatThread(waChatId, tgChatId)
 	if err != nil {
 		return 0, err
 	}
@@ -53,7 +53,7 @@ func TgGetOrMakeThreadFromWa(waChatId string, tgChatId int64, threadName string)
 		if err != nil {
 			return 0, err
 		}
-		err = database.ChatThreadAddNewPair(waChatId, tgChatId, newForum.MessageThreadId)
+		err = database.AddNewChatThread(waChatId, tgChatId, newForum.MessageThreadId)
 		if err != nil {
 			return newForum.MessageThreadId, err
 		}

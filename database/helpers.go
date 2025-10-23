@@ -2,6 +2,10 @@ package database
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	"strconv"
+	"watgbridge/database/CocoChatThreadDb"
 
 	"watgbridge/state"
 
@@ -115,41 +119,40 @@ func MsgIdDropAllPairs() error {
 	return res.Error
 }
 
-func ChatThreadAddNewPair(waChatId string, tgChatId, tgThreadId int64) error {
+func AddNewChatThread(waChatId string, tgThreadId int64) error {
 
 	db := state.State.Database
 
-	var chatPair ChatThreadPair
-	res := db.Where("id = ? AND tg_chat_id = ?", waChatId, tgChatId).Find(&chatPair)
-	if res.Error != nil {
+	var chatThread CocoChatThread
+	cocoContact, found := GetChatThread(waChatId)
+	if found {
+		chatThread.ThreadId = fmt.Sprintf("%d", tgThreadId)
+		var res = db.Save(&chatThread)
 		return res.Error
 	}
 
-	if chatPair.ID == waChatId {
-		chatPair.ID = waChatId
-		chatPair.TgChatId = tgChatId
-		chatPair.TgThreadId = tgThreadId
-		res = db.Save(&chatPair)
-		return res.Error
-	}
-	// else
-	res = db.Create(&ChatThreadPair{
-		ID:         waChatId,
-		TgChatId:   tgChatId,
-		TgThreadId: tgThreadId,
+	var res = db.Create(&CocoChatThread{
+		CocoContactId: cocoContact,
+		TgThreadId:    tgThreadId,
 	})
 	return res.Error
 }
 
-func ChatThreadGetTgFromWa(waChatId string, tgChatId int64) (int64, bool, error) {
-
+func GetChatThread(waChatId string) (CocoChatThread, bool) {
 	db := state.State.Database
 
-	var chatPair ChatThreadPair
-	res := db.Where("id = ? AND tg_chat_id = ?", waChatId, tgChatId).Find(&chatPair)
+	var chatThread CocoChatThread
+	cocoContact, found := FindCocoContactSingleId(waChatId)
 
-	found := (chatPair.ID == waChatId && chatPair.TgChatId == tgChatId)
-	return chatPair.TgThreadId, found, res.Error
+	if !found {
+		return chatThread, false
+	}
+
+	var result = db.Where(&CocoChatThread{
+		CocoContactId: cocoContact.ID,
+	}).First(&chatThread)
+
+	return chatThread, result.Error == nil
 }
 
 func ChatThreadDropPairByTg(tgChatId, tgThreadId int64) error {
@@ -284,6 +287,52 @@ func CocoContactUpdatePushName(chatId string, senderAltId string, pushName strin
 	var res = db.Save(&contact)
 
 	return res.Error
+}
+
+func CocoContactCreateFromSingle(idFromWhatsmeow string) (CocoContact, error) {
+	db := state.State.Database
+
+	contact, found := FindCocoContactSingleId(idFromWhatsmeow)
+	if found {
+		return contact, nil
+	}
+
+	jid, lid := GetJidOrLid(idFromWhatsmeow)
+	if lid == "" {
+		db.Create(&CocoContact{
+			Lid: lid,
+		})
+
+		var result = db.Where(&CocoContact{
+			Lid: lid,
+		}).First(&contact)
+
+		return contact, result.Error
+	}
+
+	db.Create(&CocoContact{
+		Jid: jid,
+	})
+
+	var result = db.Where(&CocoContact{
+		Jid: jid,
+	}).First(&contact)
+	if result.Error != nil {
+		panic(result.Error)
+	}
+
+	return contact, result.Error
+}
+
+func CocoContactCreate(chatId string, senderAltId string) (CocoContact, error) {
+	jid, lid := GetJidLid(chatId, senderAltId)
+
+	contact, found := FindCocoContact(jid, lid)
+	if !found {
+		return CocoContact{}, errors.New("contact could not be created")
+	}
+
+	return contact, nil
 }
 
 func ContactUpdatePushName(waUserId, pushName string) error {
@@ -430,6 +479,19 @@ func FindCocoContact(jid string, lid string) (CocoContact, bool) {
 	return userContact, true
 }
 
+func FindCocoContactSingleId(idFromWhatsmeow string) (CocoContact, bool) {
+	db := state.State.Database
+
+	var userContact CocoContact
+	var result = db.Where(&CocoContact{
+		Jid: idFromWhatsmeow,
+	}).Or(&CocoContact{
+		Lid: idFromWhatsmeow,
+	}).First(&userContact)
+
+	return userContact, result.Error == nil
+}
+
 // GetJidLid IDK how to put this in utils, so it's gonna live here
 func GetJidLid(chatId string, altId string) (string, string) {
 	lid := ""
@@ -449,6 +511,19 @@ func GetJidLid(chatId string, altId string) (string, string) {
 		lid = alt.User
 	} else {
 		jid = alt.User
+	}
+
+	return jid, lid
+}
+
+func GetJidOrLid(id string) (string, string) {
+	lid := ""
+	jid := ""
+	chat, _ := types.ParseJID(id)
+	if chat.Server == "lid" {
+		lid = chat.User
+	} else {
+		jid = chat.User
 	}
 
 	return jid, lid

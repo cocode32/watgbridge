@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"watgbridge/database"
+	"watgbridge/database/CocoChatThreadDb"
 	"watgbridge/state"
 	"watgbridge/utils"
 
@@ -404,7 +405,7 @@ func SetTargetGroupChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 	groupJID = groupInfo.JID
 
-	_, threadFound, err := database.ChatThreadGetTgFromWa(groupJID.String(), cfg.Telegram.TargetChatID)
+	_, threadFound, err := CocoChatThreadDb.GetChatThread(groupJID.String(), cfg.Telegram.TargetChatID)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to check database for existing mapping", err)
 	} else if threadFound {
@@ -412,7 +413,7 @@ func SetTargetGroupChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 		return err
 	}
 
-	err = database.ChatThreadAddNewPair(groupJID.String(), cfg.Telegram.TargetChatID, c.EffectiveMessage.MessageThreadId)
+	err = database.AddNewChatThread(groupJID.String(), cfg.Telegram.TargetChatID, c.EffectiveMessage.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to add the mapping in database. Unsuccessful", err)
 	}
@@ -525,7 +526,7 @@ func SetTargetPrivateChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 
 	userJID, _ := utils.WaParseJID(groupID)
 
-	_, threadFound, err := database.ChatThreadGetTgFromWa(userJID.String(), cfg.Telegram.TargetChatID)
+	_, threadFound, err := CocoChatThreadDb.GetChatThread(userJID.String(), cfg.Telegram.TargetChatID)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to check database for existing mapping", err)
 	} else if threadFound {
@@ -533,7 +534,7 @@ func SetTargetPrivateChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 		return err
 	}
 
-	err = database.ChatThreadAddNewPair(userJID.String(), cfg.Telegram.TargetChatID, c.EffectiveMessage.MessageThreadId)
+	err = database.AddNewChatThread(userJID.String(), cfg.Telegram.TargetChatID, c.EffectiveMessage.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to add the mapping in database. Unsuccessful", err)
 	}
