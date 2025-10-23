@@ -36,13 +36,6 @@ type MsgIdPair struct {
 	MarkRead sql.NullBool
 }
 
-type Me struct {
-	Jid           string `gorm:"index:jid_lid_me,unique;"`
-	Lid           string `gorm:"index:jid_lid_me,unique;"`
-	Name          string
-	CocoContactId int32
-}
-
 type ChatEphemeralSettings struct {
 	ID             string `gorm:"primaryKey;"` // WhatsApp Chat ID
 	IsEphemeral    bool
@@ -56,6 +49,5 @@ func AutoMigrate() error {
 		&ChatEphemeralSettings{},
 		&CocoContact{},
 		&CocoChatThread{},
-		&Me{},
 	)
 }

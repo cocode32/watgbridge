@@ -434,19 +434,3 @@ func GetJidOrLid(id string) (string, string) {
 
 	return jid, lid
 }
-
-func CreateMe(jid string, lid string) (Me, bool) {
-	contact, _ := FindCocoContact(jid, lid)
-
-	db := state.State.Database
-
-	var me Me
-	var result = db.Where(&Me{
-		CocoContactId: contact.ID,
-		Name:          "You", // TODO make from config
-		Jid:           jid,
-		Lid:           lid,
-	}).First(&me)
-
-	return me, result.Error == nil
-}
