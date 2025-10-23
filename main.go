@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -16,7 +15,6 @@ import (
 	"watgbridge/whatsapp"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
-	"github.com/go-co-op/gocron"
 	"go.uber.org/zap"
 )
 
@@ -133,42 +131,32 @@ func main() {
 		)
 		panic(err)
 	}
-	logger.Sync()
-
 	err = whatsapp.NewWhatsAppClient()
 	if err != nil {
 		panic(err)
 	}
+	logger.Sync()
 
 	state.State.StartTime = time.Now().UTC()
 
-	s := gocron.NewScheduler(time.UTC)
-	s.TagsUnique()
-	_, _ = s.Every(1).Hour().Tag("foo").Do(func() {
-		contacts, err := state.State.WhatsAppClient.Store.Contacts.GetAllContacts(context.Background())
-		if err == nil {
-			_ = database.ContactNameBulkAddOrUpdate(contacts)
-		}
-	})
+	// s := gocron.NewScheduler(time.UTC)
+	// s.TagsUnique()
+	// _, _ = s.Every(1).Hour().Tag("foo").Do(func() {
+	// 	contacts, err := state.State.WhatsAppClient.Store.Contacts.GetAllContacts(context.Background())
+	// 	if err == nil {
+	// 		_ = database.ContactNameBulkAddOrUpdate(contacts)
+	// 	}
+	// })
 
 	state.State.WhatsAppClient.AddEventHandler(whatsapp.WhatsAppEventHandler)
 	telegram.AddTelegramHandlers()
 	modules.LoadModuleHandlers()
 
-	if !cfg.Telegram.SkipSettingCommands {
-		err = utils.TgRegisterBotCommands(state.State.TelegramBot, state.State.TelegramCommands...)
-		if err != nil {
-			logger.Error("failed to set my commands",
-				zap.Error(err),
-			)
-		}
-	} else {
-		err = utils.TgRegisterBotCommands(state.State.TelegramBot)
-		if err != nil {
-			logger.Error("failed to set my commands to empty",
-				zap.Error(err),
-			)
-		}
+	err = utils.TgRegisterBotCommands(state.State.TelegramBot, state.State.TelegramCommands...)
+	if err != nil {
+		logger.Error("failed to set my commands",
+			zap.Error(err),
+		)
 	}
 	logger.Sync()
 
