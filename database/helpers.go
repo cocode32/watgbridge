@@ -161,15 +161,21 @@ func GetChatThread(waChatId string) (CocoChatThread, bool) {
 //
 //	return res.Error
 //}
-//
-//func ChatThreadGetWaFromTg(tgChatId, tgThreadId int64) (string, error) {
-//	db := state.State.Database
-//
-//	var chatPair ChatThreadPair
-//	res := db.Where("tg_chat_id = ? AND tg_thread_id = ?", tgChatId, tgThreadId).Find(&chatPair)
-//
-//	return chatPair.ID, res.Error
-//}
+
+func ChatThreadGetWaFromTg(tgThreadId int64) (CocoContact, bool) {
+	db := state.State.Database
+
+	var chatPair CocoChatThread
+	var cocoContact CocoContact
+	res := db.Where(&CocoChatThread{
+		ThreadId: fmt.Sprintf("%d", tgThreadId),
+	}).Find(&chatPair)
+	if res.Error != nil {
+		res = db.Where(&CocoContact{ID: chatPair.CocoContactId}).Find(&cocoContact)
+	}
+
+	return cocoContact, res.Error == nil
+}
 
 func ChatThreadGetAllPairs() ([]CocoChatThread, error) {
 

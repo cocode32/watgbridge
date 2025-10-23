@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -41,26 +42,22 @@ func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error
 	return err
 }
 
-func TgGetOrMakeThreadFromWa(waChatId string, tgChatId int64, threadName string) (int64, error) {
-	threadId, threadFound, err := database.GetChatThread(waChatId, tgChatId)
-	if err != nil {
-		return 0, err
-	}
+func TgGetOrMakeThreadFromWa(waChatId string, threadName string) (int64, error) {
+	cocoChatThread, threadFound := database.GetChatThread(waChatId)
 
 	if !threadFound {
 		tgBot := state.State.TelegramBot
-		newForum, err := tgBot.CreateForumTopic(tgChatId, threadName, &gotgbot.CreateForumTopicOpts{})
+		newForum, err := tgBot.CreateForumTopic(state.State.Config.Telegram.TargetChatID, threadName, &gotgbot.CreateForumTopicOpts{})
 		if err != nil {
 			return 0, err
 		}
-		err = database.AddNewChatThread(waChatId, tgChatId, newForum.MessageThreadId)
-		if err != nil {
-			return newForum.MessageThreadId, err
-		}
-		return newForum.MessageThreadId, nil
+		err = database.AddNewChatThread(waChatId, newForum.MessageThreadId)
+		return newForum.MessageThreadId, err
 	}
 
-	return threadId, nil
+	intThread, _ := strconv.ParseInt(cocoChatThread.ThreadId, 10, 64)
+
+	return intThread, nil
 }
 
 func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {
