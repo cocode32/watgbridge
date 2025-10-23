@@ -63,7 +63,8 @@ func WhatsAppEventHandler(evt interface{}) {
 }
 
 func ConnectedHandler() {
-	InitialSyncContactsHandler()
+	//InitialSyncContactsHandler()
+	// There seems to be a race condition with doing this here
 }
 
 func HandleWhatsAppMessage(event *events.Message) {
@@ -114,12 +115,18 @@ func HandleWhatsAppMessage(event *events.Message) {
 }
 
 func HistorySyncHandler(event *events.HistorySync) {
+	if state.State.WhatsAppClient.IsConnected() {
+		InitialSyncContactsHandler()
+	}
+
 	// cool, we have chatted to people in the past, let's get already known lids and jids
 	if event.Data.SyncType != nil && (*event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME || *event.Data.SyncType == waHistorySync.HistorySync_RECENT || *event.Data.SyncType == waHistorySync.HistorySync_INITIAL_BOOTSTRAP) {
 		for _, mapping := range event.Data.PhoneNumberToLidMappings {
+			jid, _ := waTypes.ParseJID(*mapping.PnJID)
+			lid, _ := waTypes.ParseJID(*mapping.LidJID)
 			state.State.Database.Clauses(clause.OnConflict{DoNothing: true}).Create(&database.CocoContact{
-				Jid: *mapping.PnJID,
-				Lid: *mapping.LidJID,
+				Jid: jid.ToNonAD().String(),
+				Lid: lid.ToNonAD().String(),
 			})
 		}
 	}

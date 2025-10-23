@@ -404,9 +404,9 @@ func GetJidLid(chatId string, altId string) (string, string) {
 	jid := ""
 	chat, _ := types.ParseJID(chatId)
 	if chat.Server == "lid" {
-		lid = chat.User
+		lid = chat.ToNonAD().String()
 	} else {
-		jid = chat.User
+		jid = chat.ToNonAD().String()
 	}
 
 	alt, _ := types.ParseJID(altId)
@@ -414,9 +414,9 @@ func GetJidLid(chatId string, altId string) (string, string) {
 		if lid != "" {
 			panic("both id's were lids...")
 		}
-		lid = alt.User
+		lid = alt.ToNonAD().String()
 	} else {
-		jid = alt.User
+		jid = alt.ToNonAD().String()
 	}
 
 	return jid, lid
@@ -427,9 +427,9 @@ func GetJidOrLid(id string) (string, string) {
 	jid := ""
 	chat, _ := types.ParseJID(id)
 	if chat.Server == "lid" {
-		lid = chat.User
+		lid = chat.ToNonAD().String()
 	} else {
-		jid = chat.User
+		jid = chat.ToNonAD().String()
 	}
 
 	return jid, lid
