@@ -250,16 +250,15 @@ func ContactNameGet(waUserId string) (string, string, string, string, error) {
 	return contact.Name, contact.FullName, contact.PushName, contact.BusinessName, nil
 }
 
-// TODO - this needs to change to map with jid and lid, depending
-func ContactGetAll() (map[string]ContactName, error) {
+func ContactGetAll() (map[int]CocoContact, error) {
 	db := state.State.Database
 
 	var contacts []CocoContact
 	res := db.Find(&contacts)
 
-	results := make(map[string]ContactName)
+	results := make(map[int]CocoContact)
 	for _, contact := range contacts {
-		results[contact.ID] = contact
+		results[int(contact.ID)] = contact
 	}
 	return results, res.Error
 }

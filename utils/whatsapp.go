@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"strconv"
 	"strings"
 
 	"watgbridge/database"
@@ -36,9 +37,9 @@ func WaParseJID(s string) (types.JID, bool) {
 	return recipient, true
 }
 
-func WaFuzzyFindContacts(query string) (map[string]string, int, error) {
+func WaFuzzyFindContacts(query string) (map[int]string, int, error) {
 	var (
-		results      = make(map[string]string)
+		results      = make(map[int]string)
 		resultsCount = 0
 	)
 
@@ -49,27 +50,30 @@ func WaFuzzyFindContacts(query string) (map[string]string, int, error) {
 
 	var searchSpace []string
 	for _, contact := range contacts {
-		jid := contact.ID
-		if contact.FirstName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.FirstName))
+		if contact.Name != "" {
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.Name))
 		}
 		if contact.FullName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.FullName))
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.FullName))
 		}
 		if contact.PushName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.PushName))
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.PushName))
 		}
 		if contact.BusinessName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.BusinessName))
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.BusinessName))
 		}
 	}
 
 	fuzzyResults := fuzzy.Find(strings.ToLower(query), searchSpace)
 	for _, res := range fuzzyResults {
 		info := strings.SplitN(res, "||", 2)
+		idIndex, err := strconv.Atoi(info[0])
+		if err != nil {
+			continue
+		}
 
-		contact := contacts[info[0]]
-		if _, exists := results[info[0]]; exists {
+		contact := contacts[idIndex]
+		if _, exists := results[idIndex]; exists {
 			continue
 		}
 
@@ -90,7 +94,7 @@ func WaFuzzyFindContacts(query string) (map[string]string, int, error) {
 			}
 			name += (contact.PushName + " (p)")
 		}
-		results[contact.ID] = name
+		results[idIndex] = name
 	}
 
 	return results, resultsCount, nil
