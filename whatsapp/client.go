@@ -69,15 +69,17 @@ func NewWhatsAppClient() error {
 			panic(fmt.Errorf("failed to initialize production loggers for WhatsMeow client: %s", err))
 		}
 	}
-	logger = logger.Named("WaTgBridge")
+	logger = logger.Named("Coco_WaTgBridge_WhatsAppClient")
 	defer logger.Sync()
 
 	waDatabaseLogger := &whatsmeowLogger{logger: logger.Sugar().Named("WhatsMeow_Database")}
 	waClientLogger := &whatsmeowLogger{logger: logger.Sugar().Named("WhatsMeow_Client")}
 
+	// consider tweaking this to get more information from the initial login
 	store.DeviceProps.Os = proto.String(state.State.Config.WhatsApp.SessionName)
 	store.DeviceProps.RequireFullSync = proto.Bool(false)
-	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_DESKTOP.Enum()
+	// add a little flair to your linked devices
+	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_FIREFOX.Enum()
 	store.DeviceProps.HistorySyncConfig = &waCompanionReg.DeviceProps_HistorySyncConfig{
 		FullSyncDaysLimit:              proto.Uint32(0),
 		FullSyncSizeMbLimit:            proto.Uint32(0),
@@ -110,12 +112,6 @@ func NewWhatsAppClient() error {
 		}
 		for evt := range qrChan {
 			if evt.Event == "code" {
-				// var png []byte
-				// png, _err := qrcode.Encode("aklsdfjasdfaklsdfjlasdfjaskldfjasldfjaklsdfjals", qrcode.Highest, 256)
-				// if _err != nil {
-				// 	panic(_err)
-				// }
-
 				if state.State.TelegramBot != nil {
 					qrCodePNG, err := qrcode.Encode(evt.Code, qrcode.Highest, 512)
 					if err != nil {
