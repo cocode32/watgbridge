@@ -3,8 +3,6 @@ package database
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-
 	"watgbridge/state"
 
 	"go.mau.fi/whatsmeow/types"
@@ -124,14 +122,14 @@ func AddNewChatThread(waChatId string, tgThreadId int64) error {
 	var chatThread CocoChatThread
 	cocoContact, found := GetChatThread(waChatId)
 	if found {
-		chatThread.ThreadId = fmt.Sprintf("%d", tgThreadId)
+		chatThread.ThreadId = tgThreadId
 		var res = db.Save(&chatThread)
 		return res.Error
 	}
 
 	var res = db.Create(&CocoChatThread{
 		CocoContactId: cocoContact.ID,
-		ThreadId:      fmt.Sprintf("%d", tgThreadId),
+		ThreadId:      tgThreadId,
 	})
 	return res.Error
 }
@@ -168,7 +166,7 @@ func ChatThreadGetWaFromTg(tgThreadId int64) (CocoContact, bool) {
 	var chatPair CocoChatThread
 	var cocoContact CocoContact
 	res := db.Where(&CocoChatThread{
-		ThreadId: fmt.Sprintf("%d", tgThreadId),
+		ThreadId: tgThreadId,
 	}).Find(&chatPair)
 	if res.Error != nil {
 		res = db.Where(&CocoContact{ID: chatPair.CocoContactId}).Find(&cocoContact)

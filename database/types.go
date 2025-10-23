@@ -19,7 +19,7 @@ type CocoContact struct {
 type CocoChatThread struct {
 	ID            int32 `gorm:"primaryKey;autoIncrement"`
 	CocoContactId int32
-	ThreadId      string
+	ThreadId      int64
 }
 
 type MsgIdPair struct {

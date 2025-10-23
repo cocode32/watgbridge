@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -55,9 +54,7 @@ func TgGetOrMakeThreadFromWa(waChatId string, threadName string) (int64, error) 
 		return newForum.MessageThreadId, err
 	}
 
-	intThread, _ := strconv.ParseInt(cocoChatThread.ThreadId, 10, 64)
-
-	return intThread, nil
+	return cocoChatThread.ThreadId, nil
 }
 
 func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {

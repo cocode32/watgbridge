@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"html"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1573,8 +1572,8 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 		} else {
 			updateText = fmt.Sprintf("Group settings have been changed%s, everybody can send messages now", authorInfo)
 		}
-		tgThreadId, _ := strconv.ParseInt(cocoChatThread.ThreadId, 10, 64)
-		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+
+		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
@@ -1589,20 +1588,20 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 
 		var updateText string
 		if v.Ephemeral.IsEphemeral {
-			err = database.UpdateEphemeralSettings(v.JID.ToNonAD().String(), true, v.Ephemeral.DisappearingTimer)
+			err := database.UpdateEphemeralSettings(v.JID.ToNonAD().String(), true, v.Ephemeral.DisappearingTimer)
 			updateText = fmt.Sprintf("Group's auto deletion timer has been turned on%s:\n", authorInfo)
 			updateText += fmt.Sprintf("Timer: %s\n", time.Second*time.Duration(v.Ephemeral.DisappearingTimer))
 			if err != nil {
 				updateText += fmt.Sprintf("Failed to save to DB: %s", html.EscapeString(err.Error()))
 			}
 		} else {
-			err = database.UpdateEphemeralSettings(v.JID.ToNonAD().String(), false, 0)
+			err := database.UpdateEphemeralSettings(v.JID.ToNonAD().String(), false, 0)
 			updateText = fmt.Sprintf("Group's auto deletion timer has been disabled%s:\n", authorInfo)
 			if err != nil {
 				updateText += fmt.Sprintf("Failed to save to DB: %s", html.EscapeString(err.Error()))
 			}
 		}
-		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
@@ -1622,8 +1621,8 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 				html.EscapeString(v.Delete.DeleteReason),
 			)
 		}
-		err = utils.TgSendTextById(
-			tgBot, cfg.Telegram.TargetChatID, tgThreadId,
+		err := utils.TgSendTextById(
+			tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId,
 			"The group has been deleted",
 		)
 		if err != nil {
@@ -1659,7 +1658,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 		if v.JoinReason != "" {
 			updateText += fmt.Sprintf("\nReason: %s", html.EscapeString(v.JoinReason))
 		}
-		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
@@ -1690,7 +1689,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 				}
 			}
 		}
-		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
@@ -1722,7 +1721,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 				updateText += fmt.Sprintf("- %s\n", demotedMemName)
 			}
 		}
-		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
@@ -1754,7 +1753,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 				updateText += fmt.Sprintf("- %s\n", html.EscapeString(promotedMemName))
 			}
 		}
-		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
@@ -1767,15 +1766,15 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 			html.EscapeString(changer),
 			html.EscapeString(v.Topic.Topic),
 		)
-		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+		err := utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
 	}
 
 	if v.Name != nil {
-		_, err = tgBot.EditForumTopic(
-			cfg.Telegram.TargetChatID, tgThreadId,
+		_, err := tgBot.EditForumTopic(
+			cfg.Telegram.TargetChatID, cocoChatThread.ThreadId,
 			&gotgbot.EditForumTopicOpts{
 				Name: v.Name.Name,
 			},
@@ -1795,7 +1794,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 			html.EscapeString(changer),
 			html.EscapeString(v.Name.Name),
 		)
-		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, tgThreadId, updateText)
+		err = utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, cocoChatThread.ThreadId, updateText)
 		if err != nil {
 			logger.Error("failed to send message", zap.Error(err))
 		}
