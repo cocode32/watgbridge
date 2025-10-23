@@ -110,42 +110,71 @@ func WaGetGroupName(jid types.JID) string {
 	return groupInfo.Name
 }
 
-func WaGetContactName(jid types.JID) string {
-	if jid.ToNonAD() == state.State.WhatsAppClient.Store.ID.ToNonAD() {
-		return "You"
-	}
-
-	var name string
-
-	firstName, fullName, pushName, businessName, err := database.ContactNameGet(jid.User)
-	if err == nil {
-		if fullName != "" {
-			name = fullName
-		} else if businessName != "" {
-			name = businessName + " (" + jid.User + ")"
-		} else if pushName != "" {
-			name = pushName + " (" + jid.User + ")"
-		} else if firstName != "" {
-			name = firstName + " (" + jid.User + ")"
+func WaGetContactName(waId types.JID) string {
+	cocoContact, found := database.FindCocoContactSingleId(waId.String())
+	if !found {
+		jid := waId
+		if jid.ToNonAD() == state.State.WhatsAppClient.Store.ID.ToNonAD() {
+			return "You"
 		}
-	} else {
-		waClient := state.State.WhatsAppClient
-		contact, err := waClient.Store.Contacts.GetContact(context.Background(), jid)
-		if err == nil && contact.Found {
-			if contact.FullName != "" {
-				name = contact.FullName
-			} else if contact.BusinessName != "" {
-				name = contact.BusinessName + " (" + jid.User + ")"
-			} else if contact.PushName != "" {
-				name = contact.PushName + " (" + jid.User + ")"
-			} else if contact.FirstName != "" {
-				name = contact.FirstName + " (" + jid.User + ")"
+
+		var name string
+
+		firstName, fullName, pushName, businessName, err := database.ContactNameGet(jid.User)
+		if err == nil {
+			if fullName != "" {
+				name = fullName
+			} else if businessName != "" {
+				name = businessName + " (" + jid.User + ")"
+			} else if pushName != "" {
+				name = pushName + " (" + jid.User + ")"
+			} else if firstName != "" {
+				name = firstName + " (" + jid.User + ")"
+			}
+		} else {
+			waClient := state.State.WhatsAppClient
+			contact, err := waClient.Store.Contacts.GetContact(context.Background(), jid)
+			if err == nil && contact.Found {
+				if contact.FullName != "" {
+					name = contact.FullName
+				} else if contact.BusinessName != "" {
+					name = contact.BusinessName + " (" + jid.User + ")"
+				} else if contact.PushName != "" {
+					name = contact.PushName + " (" + jid.User + ")"
+				} else if contact.FirstName != "" {
+					name = contact.FirstName + " (" + jid.User + ")"
+				}
 			}
 		}
+
+		if name == "" {
+			name = "User (" + jid.User + ")"
+		}
+
+		return name
+	}
+	var name string
+	jid := cocoContact.Jid
+
+	if jid == "" {
+		jid = cocoContact.Lid
+	}
+	if jid == "" {
+		jid = "Unknown-Number"
+	}
+
+	if cocoContact.FullName != "" {
+		name = cocoContact.FullName
+	} else if cocoContact.BusinessName != "" {
+		name = cocoContact.BusinessName + " (" + jid + ")"
+	} else if cocoContact.PushName != "" {
+		name = cocoContact.PushName + " (" + jid + ")"
+	} else if cocoContact.Name != "" {
+		name = cocoContact.Name + " (" + jid + ")"
 	}
 
 	if name == "" {
-		name = jid.User
+		name = "User (" + jid + ")"
 	}
 
 	return name

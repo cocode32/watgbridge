@@ -1404,15 +1404,73 @@ func PictureEventHandler(v *events.Picture) {
 		return
 	}
 
+	if cfg.WhatsApp.CreateThreadForInfoUpdates {
+		// just send to a default thread for these updates
+		tgThreadId, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates")
+		if err != nil {
+			logger.Warn(
+				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
+				zap.String("chat", v.JID.String()),
+				zap.Error(err),
+			)
+			return
+		}
+		changer := utils.WaGetContactName(v.Author)
+		if changer == "" {
+			changer = utils.WaGetContactName(v.JID.ToNonAD())
+		}
+		if v.Remove {
+			updateText := fmt.Sprintf("The profile picture was removed by %s", html.EscapeString(changer))
+			err = utils.TgSendTextById(
+				tgBot, cfg.Telegram.TargetChatID, tgThreadId,
+				updateText,
+			)
+			if err != nil {
+				logger.Error("failed to send message to the target chat", zap.Error(err))
+				return
+			}
+		} else {
+			pictureInfo, err := waClient.GetProfilePictureInfo(
+				v.JID,
+				&whatsmeow.GetProfilePictureParams{
+					Preview: false,
+				},
+			)
+			if err != nil {
+				logger.Error("failed to get profile picture info", zap.Error(err), zap.String("group", v.JID.String()))
+				return
+			}
+			if pictureInfo == nil {
+				logger.Error("failed to get profile picture info, received null", zap.String("group", v.JID.String()))
+				return
+			}
+
+			newPictureBytes, err := utils.DownloadFileBytesByURL(pictureInfo.URL)
+			if err != nil {
+				logger.Error("failed to download profile picture", zap.Error(err), zap.String("group", v.JID.String()))
+				return
+			}
+
+			_, err = tgBot.SendPhoto(cfg.Telegram.TargetChatID, &gotgbot.FileReader{Data: bytes.NewReader(newPictureBytes)}, &gotgbot.SendPhotoOpts{
+				MessageThreadId: tgThreadId,
+				Caption:         fmt.Sprintf("The profile picture was updated by %s", html.EscapeString(changer)),
+			})
+			if err != nil {
+				logger.Error("failed to send message to the group", zap.Error(err))
+				return
+			}
+		}
+
+		return
+	}
+
+	// TODO I still need to fix the lid thing here, but for right now, at least I can get everyone's update posted
 	_, threadFound := database.GetChatThread(v.JID.ToNonAD().String())
 	if !threadFound {
 		logger.Warn(
 			"no thread found for a WhatsApp chat (handling Picture event)",
 			zap.String("chat", v.JID.String()),
 		)
-		if !cfg.WhatsApp.CreateThreadForInfoUpdates {
-			return
-		}
 	}
 
 	if v.JID.Server == waTypes.GroupServer {
