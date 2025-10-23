@@ -117,6 +117,14 @@ func (cfg *Config) LoadConfig() error {
 		}
 	}
 
+	deprecatedOptions := GetDeprecatedConfigOptions(cfg)
+	if deprecatedOptions != nil {
+		fmt.Println("The following options have been deprecated/removed:")
+		for num, opt := range deprecatedOptions {
+			fmt.Printf("%d. %s: %s\n", num+1, opt.Name, opt.Description)
+		}
+	}
+
 	return nil
 }
 
