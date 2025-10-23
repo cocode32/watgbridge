@@ -31,6 +31,9 @@ func WhatsAppEventHandler(evt interface{}) {
 	case *events.LoggedOut:
 		LogoutHandler(whatsAppEvent)
 
+	case *events.HistorySync:
+		HistorySyncHandler(whatsAppEvent)
+
 	case *events.Receipt:
 		ReceiptEventHandler(whatsAppEvent)
 
@@ -42,9 +45,6 @@ func WhatsAppEventHandler(evt interface{}) {
 
 	case *events.Picture:
 		PictureEventHandler(whatsAppEvent)
-
-	case *events.HistorySync:
-		HistorySyncHandler(whatsAppEvent)
 
 	case *events.GroupInfo:
 		GroupInfoEventHandler(whatsAppEvent)
