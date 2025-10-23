@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"os"
+	"watgbridge/database"
 
 	"watgbridge/state"
 
@@ -151,6 +152,9 @@ func NewWhatsAppClient() error {
 		zap.String("push_name", client.Store.PushName),
 		zap.String("jid", client.Store.ID.String()),
 	)
+
+	// after we've connected, let's just save our information of jid and lid
+	database.CreateMe(client.Store.ID.String(), client.Store.LID.String())
 
 	return nil
 }
