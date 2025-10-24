@@ -152,12 +152,22 @@ func main() {
 	telegram.AddTelegramHandlers()
 	modules.LoadModuleHandlers()
 
-	err = utils.TgRegisterBotCommands(state.State.TelegramBot, state.State.TelegramCommands...)
-	if err != nil {
-		logger.Error("failed to set my commands",
-			zap.Error(err),
-		)
+	if cfg.Telegram.RemoveBotCommands {
+		err = utils.TgRegisterBotCommands(state.State.TelegramBot)
+		if err != nil {
+			logger.Error("failed to set my commands to empty",
+				zap.Error(err),
+			)
+		}
+	} else {
+		err = utils.TgRegisterBotCommands(state.State.TelegramBot, state.State.TelegramCommands...)
+		if err != nil {
+			logger.Error("failed to set my commands",
+				zap.Error(err),
+			)
+		}
 	}
+
 	logger.Sync()
 
 	if !cfg.Telegram.SkipStartupMessage {

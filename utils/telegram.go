@@ -99,9 +99,7 @@ func TgReplyTextByContext(b *gotgbot.Bot, c *ext.Context, text string, buttons *
 		sendOpts.ReplyMarkup = buttons
 	}
 
-	if silent {
-		sendOpts.DisableNotification = true
-	}
+	sendOpts.DisableNotification = silent
 
 	msg, err := b.SendMessage(c.EffectiveChat.Id, text, sendOpts)
 	return msg, err

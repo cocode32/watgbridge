@@ -27,29 +27,77 @@ telegram:
     target_chat_id: -100ZZZZZZAAAAAAAA
 
     skip_video_stickers: false
-    # this will prevent you from interacting with the bot on telegram. This should be set to true if you want to delete the commands (i.e. free the bot for something else)
-    skip_setting_commands: false
+    # the bot commands are set automatically. If you would like to "clean" your bot for example, to remove all watgbridge commands, set this to true
+    remove_bot_commands: false
     # send "online" to whatsapp when you are on telegram?
     send_my_presence: false
-    # work in progress
+    # TODO work in progress
     send_my_read_receipts: true
+    # don't receive notifications from the bot (specifically in the group, on telegram) when you react or send a message
     silent_confirmation: true
+    # options: "emoji", "text"
+    # this applies to messages sent from telegram to whatsapp. confirmation comes from the bot
     confirmation_type: emoji
+    # A message is sent to you from the bot when the application starts, to disable this, set this to true
     skip_startup_message: true
-    spoiler_as_viewonce: true
+    # if you would like to send a message as a "view-once" message, wrap the entire message as a spoiler
+    # setting this to true will enable the above
+    spoiler_as_viewonce: false
+    # when this is set to true, it will allow you to reply with a single emoji on a message, and this emoji will be used as a reaction on whatsapp
     reactions: true
 
 whatsapp:
+  # get more verbose logging
+  # this is very spamming, enable with caution
+  whatsmeow_debug_mode: false
+  # only sqlite and postgres are supported by whatsmeow
   login_database:
     type: sqlite3
-    url: file:personal_coco_wawebstore.db?_foreign_keys=on
+    url: file:coco_wawebstore.db?_foreign_keys=on
+
+  # metadata to attach to stickers created by the bridge
+  # I haven't tested this with ["spaces"], so use a space with caution xD
   sticker_metadata:
     pack_name: AkitaInuBeta
     author_name: AkitaInuBeta
+
+  # the name which will appear in your linked devices on whatsapp
   session_name: AkitaInu-BetaNode
-  tag_all_allowed_groups: [ ]
-  ignore_chats: [ ]
-  status_ignored_chats: [ ]
+
+  # TODO need to confirm if this is working still with changes
+  # All these values can be obtained by running /findcontacts and /getwagroups commands
+  # You have to put only the values preceding the @ character
+  # Members of these groups can tag everyone by sending @all or @everyone
+  tag_all_allowed_groups:
+    - 91xxxxxxxxxx-xxxxxxxxxx
+    - 91xxxxxxxxxx-xxxxxxxxxx
+    - 91xxxxxxxxxx-xxxxxxxxxx
+    - 12xxxxxxxxxxxxx669
+  # don't want to allow this at all? use this
+  # tag_all_allowed_groups: []
+
+  # use the person's phone number to ignore them
+  # you will not receive any messages or updates from this person
+  # one person per line
+  ignore_chats:
+    - 275551234
+    - 275551235
+    - 275551236
+    - 275551237
+  # don't want to ignore anyone? use this
+  # ignore_chats: []
+
+  # use the person's phone number to ignore them
+  # you will not receive any status posts from this person
+  # one person per line
+  status_ignored_chats:
+    - 275551235
+    - 275551236
+  # don't want to ignore anyone? use this
+  # status_ignored_chats: []
+
+  # media related
+  # if you set skip to true for any of this, they will not be sent to telegram
   skip_documents: false
   skip_images: false
   skip_gifs: false
@@ -60,13 +108,55 @@ whatsapp:
   skip_stickers: false
   skip_contacts: false
   skip_locations: false
+
+  # The default from this example is to have this value as true
+  # when this value is true, it will create a new topic in telegram called "Info Updates"
+  # and it will dump everyone's profile picture and user about messages in here
+  # I'm not sure if the changes to lid make this work to the individual thread
+  # recommended to keep this to true for now
+  create_thread_for_info_updates: true
+  # these are the details that you can skip sending to the info_updates "thread"
+  # TODO - need to add user about message
   skip_profile_picture_updates: false
   skip_group_settings_updates: false
-  skip_chat_details: false
+
+  # This will basically give you some extra information on the message that you receive, if it's from a person or a group
+  # typically fine to leave this as true, but you can set it to false to check out what the messages look like
+  skip_chat_details: true
+
+  # TODO need to confirm this
   send_revoked_message_updates: true
-  whatsmeow_debug_mode: false
+
+  # by default, you won't get messages you send to the person on whatsapp in telegram
+  # recommendation is to keep this set to true, so that you can have all messages in telegram
+  # if you feel like you don't care about your own messages, turn this off
   send_my_messages_from_other_devices: true
-  create_thread_for_info_updates: true
+
+# database for this application. The supported databases are mysql, postgres and sqlite
 database:
   type: sqlite
-  path: ./personal_coco_watgbridge.sqlite.db
+  path: ./coco_watgbridge.sqlite.db
+
+# Uncomment any on of these sections
+# Using the sqlite database will be easiest as it does not require any hosted database server and stores data in a single file on your device
+
+#database:
+#  type: postgres
+#  host: localhost
+#  user: admin
+#  password: password
+#  dbname: gobot
+#  port: 5432
+#  time_zone: Asia/Kolkata
+
+#database:
+#  type: sqlite
+#  path: ./gobot.sqlite.db
+
+#database:
+#  type: mysql
+#  host: localhost
+#  port: 3306
+#  user: admin
+#  password: password
+#  dbname: gobot
