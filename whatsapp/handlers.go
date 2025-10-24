@@ -1599,7 +1599,7 @@ func PictureEventHandler(v *events.Picture) {
 
 	var tgThreadId int64
 	var err error
-	cocoChatThread, threadFound := database.GetChatThread(v.JID)
+	cocoChatThread, threadFound := database.GetChatThread(v.JID.ToNonAD())
 	if !threadFound {
 		logger.Warn(
 			"no thread found for a WhatsApp chat (handling Picture event)",

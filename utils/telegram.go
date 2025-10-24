@@ -41,9 +41,7 @@ func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, comm
 	if hasCommands {
 		_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
 			LanguageCode: "en",
-			// limit these commands to only show for you
-			// TODO need to get your actual ID - once I can confirm that this doesn't show for me
-			Scope: gotgbot.BotCommandScopeChat{ChatId: DownloadSizeLimit},
+			Scope:        gotgbot.BotCommandScopeChat{ChatId: ownerId},
 		})
 		if !skipMessage {
 			_, sendErr = b.SendMessage(ownerId, "Successfully set all commands to the bot", &gotgbot.SendMessageOpts{})
