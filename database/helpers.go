@@ -452,7 +452,7 @@ func FindCocoContactSingleId(idFromWhatsmeow types.JID) (CocoContact, bool) {
 		Jid: GetDatabaseJid(idFromWhatsmeow),
 	}).Or(&CocoContact{
 		Lid: GetDatabaseJid(idFromWhatsmeow),
-	}).Limit(1).Find(&userContact)
+	}).First(&userContact)
 
 	return userContact, result.Error == nil
 }
