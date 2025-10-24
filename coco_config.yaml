@@ -127,6 +127,7 @@ whatsapp:
   # TODO - need to add user about message
   skip_profile_picture_updates: false
   skip_group_settings_updates: false
+  skip_user_about_updates: false
 
   # This will basically give you some extra information on the message that you receive, if it's from a person or a group
   # typically fine to leave this as true, but you can set it to false to check out what the messages look like
@@ -138,7 +139,8 @@ whatsapp:
   send_my_messages_from_other_devices: true
 
   # TODO - add skip initial skip, for the crazy people I guess? xD
-  # skip_initial_skip: false
+  # skip_initial_sync: false
+  # skips sending a picture of the person when creating a new thread
   skip_initial_photo_send: false
   # skips the qr code sent to the telegram bot
   skip_qr_code: false

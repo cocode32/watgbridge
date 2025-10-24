@@ -62,6 +62,7 @@ type Config struct {
 		SkipLocations                  bool     `yaml:"skip_locations"`
 		SkipProfilePictureUpdates      bool     `yaml:"skip_profile_picture_updates"`
 		SkipGroupSettingsUpdates       bool     `yaml:"skip_group_settings_updates"`
+		SkipUserAboutUpdates           bool     `yaml:"skip_user_about_updates"`
 		SkipChatDetails                bool     `yaml:"skip_chat_details"`
 		SkipRevokedMessage             bool     `yaml:"skip_revoked_message"`
 		WhatsmeowDebugMode             bool     `yaml:"whatsmeow_debug_mode"`
