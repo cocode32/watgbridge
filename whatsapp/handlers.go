@@ -244,6 +244,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 	}
 
 	var bridgedText string
+	// TODO I wanna clean this update. For note for myself, basically leave this as false so that PVT doesn't show, because we know it's a private chat
 	if cfg.WhatsApp.SkipChatDetails {
 		logger.Debug("skipping to add chat details as configured",
 			zap.String("event_id", v.Info.ID),
