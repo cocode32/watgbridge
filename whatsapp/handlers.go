@@ -144,11 +144,13 @@ func SendProfilePictureToNewThread(isNewThread bool, threadId int64, waTargetCha
 				MessageThreadId: threadId,
 				Caption:         fmt.Sprintf("This user's current profile picture"),
 			})
-			tgBot.SendMessage(
-				cfg.Telegram.TargetChatID,
-				"failed to send the profile picture here",
-				&gotgbot.SendMessageOpts{MessageThreadId: threadId},
-			)
+			if err != nil {
+				tgBot.SendMessage(
+					cfg.Telegram.TargetChatID,
+					"failed to send the profile picture here",
+					&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+				)
+			}
 		} else {
 			logger.Error("failed to get profile picture info, received null", zap.String("group", waTargetChat.String()))
 			tgBot.SendMessage(
@@ -540,11 +542,13 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 						MessageThreadId: threadId,
 						Caption:         fmt.Sprintf("This user's current profile picture"),
 					})
-					tgBot.SendMessage(
-						cfg.Telegram.TargetChatID,
-						"failed to send the profile picture here",
-						&gotgbot.SendMessageOpts{MessageThreadId: threadId},
-					)
+					if err != nil {
+						tgBot.SendMessage(
+							cfg.Telegram.TargetChatID,
+							"failed to send the profile picture here",
+							&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+						)
+					}
 				} else {
 					logger.Error("failed to get profile picture info, received null", zap.String("group", v.Info.Chat.String()))
 					tgBot.SendMessage(
