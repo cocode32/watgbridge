@@ -144,12 +144,16 @@ func HistorySyncHandler(event *events.HistorySync) {
 		for _, mapping := range event.Data.PhoneNumberToLidMappings {
 			jid, _ := waTypes.ParseJID(*mapping.PnJID)
 			lid, _ := waTypes.ParseJID(*mapping.LidJID)
-			_, foundJid := database.FindCocoContactSingleId(jid)
+			jidContact, foundJid := database.FindCocoContactSingleId(jid)
 			if !foundJid {
-				_, foundLid := database.FindCocoContactSingleId(lid)
+				lidContact, foundLid := database.FindCocoContactSingleId(lid)
 				if !foundLid {
 					database.CreateCocoContact(jid, lid, "HistorySyncHandler")
+				} else {
+					database.CocoContactUpdateJid(lidContact.ID, jid)
 				}
+			} else {
+				database.CocoContactUpdateLid(jidContact.ID, lid)
 			}
 		}
 	}

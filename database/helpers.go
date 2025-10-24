@@ -350,6 +350,34 @@ func CocoContactUpdatePushName(senderId types.JID, senderAltId types.JID, pushNa
 	return res.Error
 }
 
+func CocoContactUpdateJid(cocoId int32, id types.JID) error {
+	db := state.State.Database
+
+	contact, found := FindCocoContactById(cocoId)
+	if !found {
+		return nil
+	}
+
+	contact.Jid = GetDatabaseJid(id)
+	var res = db.Save(&contact)
+
+	return res.Error
+}
+
+func CocoContactUpdateLid(cocoId int32, id types.JID) error {
+	db := state.State.Database
+
+	contact, found := FindCocoContactById(cocoId)
+	if !found {
+		return nil
+	}
+
+	contact.Lid = GetDatabaseJid(id)
+	var res = db.Save(&contact)
+
+	return res.Error
+}
+
 func UpdateEphemeralSettings(waChatId string, isEphemeral bool, ephemeralTimer uint32) error {
 	db := state.State.Database
 
