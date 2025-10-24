@@ -52,6 +52,40 @@ func main() {
 	)
 	logger.Sync()
 
+	// pre-check deps
+	if cfg.FfmpegExecutable == "" && !cfg.Telegram.SkipVideoStickers {
+		panic("you need to set your ffmpeg binary location in the config to use video stickers; either skip_video_stickers or provide ffmpeg_executable")
+	}
+
+	// Create local location for time
+	locLoc, err := time.LoadLocation(cfg.TimeZone)
+	if err != nil {
+		logger.Fatal("failed to set time zone",
+			zap.String("time_zone", cfg.TimeZone),
+			zap.Error(err),
+		)
+		panic(err)
+	}
+	state.State.LocalLocation = locLoc
+
+	// Setup database
+	db, err := database.Connect()
+	if err != nil {
+		logger.Fatal("could not connect to database",
+			zap.Error(err),
+		)
+		panic("could not connect to database")
+	}
+
+	state.State.Database = db
+	err = database.AutoMigrate()
+	if err != nil {
+		logger.Fatal("could not migrate database tabels",
+			zap.Error(err),
+		)
+		panic("unable to migrate database")
+	}
+
 	// Setup telegram bot
 	err = telegram.NewTelegramClient()
 	if err != nil {
@@ -80,45 +114,16 @@ func main() {
 	}
 	logger.Sync()
 
-	// Create local location for time
-	locLoc, err := time.LoadLocation(cfg.TimeZone)
-	if err != nil {
-		logger.Fatal("failed to set time zone",
-			zap.String("time_zone", cfg.TimeZone),
-			zap.Error(err),
-		)
-		panic(err)
-	}
-	state.State.LocalLocation = locLoc
-
-	if cfg.FfmpegExecutable == "" && !cfg.Telegram.SkipVideoStickers {
-		panic("you need to set your ffmpeg binary location in the config to use video stickers; either skip_video_stickers or provide ffmpeg_executable")
-	}
-
-	// Setup database
-	db, err := database.Connect()
-	if err != nil {
-		logger.Fatal("could not connect to database",
-			zap.Error(err),
-		)
-		panic("could not connect to database")
-	}
-
-	state.State.Database = db
-	err = database.AutoMigrate()
-	if err != nil {
-		logger.Fatal("could not migrate database tabels",
-			zap.Error(err),
-		)
-		panic("unable to migrate database")
-	}
-
+	// setup database
 	err = whatsapp.NewWhatsAppClient()
 	if err != nil {
 		panic(err)
 	}
 	logger.Sync()
 
+	state.State.WhatsAppClient.AddEventHandler(whatsapp.WhatsAppEventHandler)
+
+	// manage recurring tasks
 	state.State.StartTime = time.Now().UTC()
 
 	// s := gocron.NewScheduler(time.UTC)
@@ -129,8 +134,6 @@ func main() {
 	// 		_ = database.ContactNameBulkAddOrUpdate(contacts)
 	// 	}
 	// })
-
-	state.State.WhatsAppClient.AddEventHandler(whatsapp.WhatsAppEventHandler)
 
 	// keep the application running
 	state.State.TelegramUpdater.Idle()
