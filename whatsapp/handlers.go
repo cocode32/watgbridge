@@ -1510,7 +1510,7 @@ func SendUserAboutMessageUpdateToInfoThread(v *events.UserAbout, cfg *state.Conf
 		changer := utils.WaGetContactName(v.JID.ToNonAD())
 
 		if override {
-			updateMessageText += fmt.Sprintf("<b>User About Override/No Thread Found</b> %s\n\n", changer)
+			updateMessageText += "<b>User About Override/No Thread Found</b> \n\n"
 		}
 		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates", "Info Updates")
 		if err != nil {
@@ -1522,7 +1522,7 @@ func SendUserAboutMessageUpdateToInfoThread(v *events.UserAbout, cfg *state.Conf
 			return true
 		}
 
-		updateMessageText += "User's about message was updated"
+		updateMessageText += fmt.Sprintf("User's about message was updated (%s)", changer)
 		if time.Since(v.Timestamp).Seconds() > 60 {
 			updateMessageText += fmt.Sprintf(
 				"at %s:\n\n",
