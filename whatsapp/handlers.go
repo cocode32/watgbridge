@@ -1714,9 +1714,10 @@ func SendPictureToInfoUpdatesThread(v *events.Picture, cfg *state.Config, logger
 	if cfg.WhatsApp.CreateThreadForInfoUpdates || override {
 		var updateText string
 		if override {
-			updateText += "<b>User not found</b>\nUser's thread was not found, so we sent it here instead\n\n"
+			updateText += "<b>User/Group not found</b>\nUser's thread was not found, so we sent it here instead\n\n"
 		}
 		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates", "Info Updates")
+		fmt.Printf("info thread what the fuck? %v \n\n\n", tgThreadId)
 		if err != nil {
 			logger.Warn(
 				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
