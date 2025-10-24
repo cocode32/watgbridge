@@ -60,7 +60,7 @@ func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, comm
 	return errors.Join(err, sendErr)
 }
 
-func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (int64, error) {
+func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (int64, bool, error) {
 	jid, _ := waTypes.ParseJID(waChatId)
 	cocoChatThread, threadFound := database.GetChatThread(jid)
 
@@ -68,13 +68,13 @@ func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (i
 		tgBot := state.State.TelegramBot
 		newForum, err := tgBot.CreateForumTopic(state.State.Config.Telegram.TargetChatID, threadName, &gotgbot.CreateForumTopicOpts{})
 		if err != nil {
-			return 0, err
+			return 0, false, err
 		}
 		err = database.AddNewChatThreadWithPush(jid, newForum.MessageThreadId, name)
-		return newForum.MessageThreadId, err
+		return newForum.MessageThreadId, true, err
 	}
 
-	return cocoChatThread.ThreadId, nil
+	return cocoChatThread.ThreadId, false, nil
 }
 
 func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {

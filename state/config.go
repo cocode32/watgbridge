@@ -70,6 +70,7 @@ type Config struct {
 		AllowEveryoneTagging           bool     `yaml:"allow_everyone_tagging"`
 		SkipStartupMessage             bool     `yaml:"skip_startup_message"`
 		SkipQrCodeSend                 bool     `yaml:"skip_qr_code"`
+		SkipInitialPhotoSend           bool     `yaml:"skip_initial_photo_send"`
 	} `yaml:"whatsapp"`
 
 	Database map[string]string `yaml:"database"`

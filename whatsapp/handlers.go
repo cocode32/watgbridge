@@ -284,6 +284,8 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		replyToMsgId  int64
 		threadId      int64
 		threadIdFound bool
+		isNewThread   bool
+		err           error
 	)
 
 	if isEdited {
@@ -398,7 +400,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 						tagInfoText := "#mentions\n\n" + bridgedText + fmt.Sprintf("\n<i>You were tagged in %s</i>",
 							html.EscapeString(utils.WaGetGroupName(v.Info.Chat)))
 
-						threadId, err := utils.TgGetOrMakeThreadFromWa("mentions", "Mentions", "Mentions")
+						threadId, isNewThread, err = utils.TgGetOrMakeThreadFromWa("mentions", "Mentions", "Mentions")
 						if err != nil {
 							utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "failed to create/find thread id for 'mentions'", err)
 						} else {
@@ -431,36 +433,123 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 	}
 
 	if !threadIdFound {
-		var err error
 		if v.Info.Chat.String() == "status@broadcast" {
-			threadId, err = utils.TgGetOrMakeThreadFromWa("status@broadcast", "Status", "Status")
+			threadId, _, err = utils.TgGetOrMakeThreadFromWa("status@broadcast", "Status", "Status")
 			if err != nil {
 				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "failed to create/find thread id for 'status@broadcast'", err)
 				return
 			}
 		} else if v.Info.IsIncomingBroadcast() {
-			threadId, err = utils.TgGetOrMakeThreadFromWa(v.Info.MessageSource.Sender.ToNonAD().String(), utils.WaGetContactName(v.Info.MessageSource.Sender), "")
+			threadId, _, err = utils.TgGetOrMakeThreadFromWa(v.Info.MessageSource.Sender.ToNonAD().String(), utils.WaGetContactName(v.Info.MessageSource.Sender), "")
 			if err != nil {
 				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, fmt.Sprintf("failed to create/find thread id for '%s'",
 					v.Info.MessageSource.Sender.ToNonAD().String()), err)
 				return
 			}
 		} else if v.Info.IsGroup {
-			threadId, err = utils.TgGetOrMakeThreadFromWa(v.Info.Chat.String(), utils.WaGetGroupName(v.Info.Chat), "")
+			threadId, isNewThread, err = utils.TgGetOrMakeThreadFromWa(v.Info.Chat.String(), utils.WaGetGroupName(v.Info.Chat), "")
 			if err != nil {
 				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, fmt.Sprintf("failed to create/find thread id for '%s'",
 					v.Info.Chat.String()), err)
 				return
 			}
+			if isNewThread && !cfg.WhatsApp.SkipInitialPhotoSend {
+				pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(
+					v.Info.Chat,
+					&whatsmeow.GetProfilePictureParams{
+						Preview: false,
+					},
+				)
+				if err != nil {
+					logger.Error("failed to get profile picture info", zap.Error(err), zap.String("group", v.Info.Chat.String()))
+
+					tgBot.SendMessage(
+						cfg.Telegram.TargetChatID,
+						"failed to get profile picture info",
+						&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+					)
+				} else if pictureInfo != nil {
+					newPictureBytes, err := utils.DownloadFileBytesByURL(pictureInfo.URL)
+					if err != nil {
+						logger.Error("failed to download profile picture", zap.Error(err), zap.String("group", v.Info.Chat.String()))
+						tgBot.SendMessage(
+							cfg.Telegram.TargetChatID,
+							"failed to download profile picture",
+							&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+						)
+					}
+
+					_, err = tgBot.SendPhoto(cfg.Telegram.TargetChatID, &gotgbot.FileReader{Data: bytes.NewReader(newPictureBytes)}, &gotgbot.SendPhotoOpts{
+						MessageThreadId: threadId,
+						Caption:         fmt.Sprintf("This user's current profile picture"),
+					})
+					tgBot.SendMessage(
+						cfg.Telegram.TargetChatID,
+						"failed to send the profile picture here",
+						&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+					)
+				} else {
+					logger.Error("failed to get profile picture info, received null", zap.String("group", v.Info.Chat.String()))
+					tgBot.SendMessage(
+						cfg.Telegram.TargetChatID,
+						"failed to get profile picture info, received null",
+						&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+					)
+				}
+			}
 		} else {
 			targetChatIdString := v.Info.Chat.ToNonAD().String()
 			targetChatId := v.Info.Chat.ToNonAD()
 
-			threadId, err = utils.TgGetOrMakeThreadFromWa(targetChatIdString, utils.WaGetContactName(targetChatId), "")
+			threadId, isNewThread, err = utils.TgGetOrMakeThreadFromWa(targetChatIdString, utils.WaGetContactName(targetChatId), "")
 			if err != nil {
 				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, fmt.Sprintf("failed to create/find thread id for '%s'",
 					targetChatIdString), err)
 				return
+			}
+			if isNewThread && !cfg.WhatsApp.SkipInitialPhotoSend {
+				pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(
+					targetChatId,
+					&whatsmeow.GetProfilePictureParams{
+						Preview: false,
+					},
+				)
+				if err != nil {
+					logger.Error("failed to get profile picture info", zap.Error(err), zap.String("group", targetChatIdString))
+
+					tgBot.SendMessage(
+						cfg.Telegram.TargetChatID,
+						"failed to get profile picture info",
+						&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+					)
+				} else if pictureInfo != nil {
+					newPictureBytes, err := utils.DownloadFileBytesByURL(pictureInfo.URL)
+					if err != nil {
+						logger.Error("failed to download profile picture", zap.Error(err), zap.String("group", targetChatIdString))
+						tgBot.SendMessage(
+							cfg.Telegram.TargetChatID,
+							"failed to download profile picture",
+							&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+						)
+					}
+
+					_, err = tgBot.SendPhoto(cfg.Telegram.TargetChatID, &gotgbot.FileReader{Data: bytes.NewReader(newPictureBytes)}, &gotgbot.SendPhotoOpts{
+						MessageThreadId: threadId,
+						Caption:         fmt.Sprintf("This user's current profile picture"),
+					})
+					tgBot.SendMessage(
+						cfg.Telegram.TargetChatID,
+						"failed to send the profile picture here",
+						&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+					)
+				} else {
+					logger.Error("failed to get profile picture info, received null", zap.String("group", targetChatIdString))
+					tgBot.SendMessage(
+						cfg.Telegram.TargetChatID,
+						"failed to get profile picture info, received null",
+						&gotgbot.SendMessageOpts{MessageThreadId: threadId},
+					)
+				}
 			}
 		}
 	}
@@ -1304,7 +1393,7 @@ func CallOfferEventHandler(v *events.CallOffer) {
 	// TODO : Check and handle group calls
 	callerName := utils.WaGetContactName(v.From)
 
-	callThreadId, err := utils.TgGetOrMakeThreadFromWa("calls@broadcast", "Calls", "Calls")
+	callThreadId, _, err := utils.TgGetOrMakeThreadFromWa("calls@broadcast", "Calls", "Calls")
 	if err != nil {
 		utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retreive corresponding thread id for calls", err)
 		return
@@ -1350,7 +1439,7 @@ func UserAboutEventHandler(v *events.UserAbout) {
 
 	// just send to a default thread for these updates
 	if cfg.WhatsApp.CreateThreadForInfoUpdates {
-		tgThreadId, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates", "Info Updates")
+		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates", "Info Updates")
 		if err != nil {
 			logger.Warn(
 				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
@@ -1392,7 +1481,7 @@ func UserAboutEventHandler(v *events.UserAbout) {
 		)
 	}
 
-	tgThreadId, err := utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetContactName(v.JID.ToNonAD()), "")
+	tgThreadId, isNewThread, err := utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetContactName(v.JID.ToNonAD()), "")
 	if err != nil {
 		logger.Warn(
 			"failed to create a new thread for a WhatsApp chat (handling UserAbout event)",

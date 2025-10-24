@@ -139,8 +139,7 @@ whatsapp:
 
   # TODO - add skip initial skip, for the crazy people I guess? xD
   # skip_initial_skip: false
-  # TODO - add skip profile picture send on new chat
-  # skip_initial_photo: false
+  skip_initial_photo_send: false
   # skips the qr code sent to the telegram bot
   skip_qr_code: false
 
