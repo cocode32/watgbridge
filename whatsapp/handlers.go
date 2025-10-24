@@ -455,17 +455,13 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				return
 			}
 		} else {
-			// TODO come back here
-			//target_chat_jid, err := waTypes.ParseJID(toContact.ContactLid)
-			//if err != nil {
-			//	target_chat_jid, _ = waTypes.ParseJID(toContact.ContactJid)
-			//}
-			target_chat_jid := v.Info.Chat
+			targetChatIdString := v.Info.Chat.ToNonAD().String()
+			targetChatId := v.Info.Chat.ToNonAD()
 
-			threadId, err = utils.TgGetOrMakeThreadFromWa(target_chat_jid.ToNonAD().String(), utils.WaGetContactName(target_chat_jid), "")
+			threadId, err = utils.TgGetOrMakeThreadFromWa(targetChatIdString, utils.WaGetContactName(targetChatId), "")
 			if err != nil {
 				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, fmt.Sprintf("failed to create/find thread id for '%s'",
-					target_chat_jid.ToNonAD().String()), err)
+					targetChatIdString), err)
 				return
 			}
 		}
@@ -1539,7 +1535,7 @@ func PictureEventHandler(v *events.Picture) {
 		return
 	}
 
-	// TODO I still need to fix the lid thing here, but for right now, at least I can get everyone's update posted
+	// TODO I still need to fix the lid thing here, but for right now, at least I can get everyone's update posted because i will override and create a topic for it alone
 	_, threadFound := database.GetChatThread(v.JID)
 	if !threadFound {
 		logger.Warn(

@@ -151,11 +151,14 @@ func AddNewChatThreadWithPush(waChatId types.JID, tgThreadId int64, pushName str
 	cocoChatThread, found := GetChatThread(waChatId)
 	if found {
 		chatThread.ThreadId = tgThreadId
-		cocoContact, _ = FindCocoContactById(cocoChatThread.CocoContactId)
-		cocoContact.PushName = pushName
+		if pushName != "" {
+			cocoContact, _ = FindCocoContactById(cocoChatThread.CocoContactId)
+			cocoContact.PushName = pushName
+			var contactRes = db.Create(&cocoContact)
+			panic(contactRes.Error)
+		}
 		var threadRes = db.Save(&chatThread)
-		var contactRes = db.Create(&cocoContact)
-		return errors.Join(threadRes.Error, contactRes.Error)
+		return errors.Join(threadRes.Error)
 	}
 
 	cocoContact, found = FindCocoContactSingleId(waChatId)
@@ -167,7 +170,9 @@ func AddNewChatThreadWithPush(waChatId types.JID, tgThreadId int64, pushName str
 		} else {
 			cocoContact, _ = CreateCocoContactLid(waChatId)
 		}
-		cocoContact.PushName = pushName
+		if pushName != "" {
+			cocoContact.PushName = pushName
+		}
 	}
 
 	var res = db.Create(&CocoChatThread{
