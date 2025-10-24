@@ -9,6 +9,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func hasKeys(p_map *map[string]string, keys ...string) (missingKeys []string) {
@@ -29,7 +30,14 @@ func Connect() (*gorm.DB, error) {
 		return nil, fmt.Errorf("error: key 'type' not found in database config")
 	}
 
-	gormConfig := gorm.Config{}
+	var gormConfig gorm.Config
+	if state.State.Config.SilentDbLogs {
+		gormConfig = gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		}
+	} else {
+		gormConfig = gorm.Config{}
+	}
 
 	switch dbType {
 

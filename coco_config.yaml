@@ -13,6 +13,9 @@ time_format: Mon, 2006-01-02 @ 15:04:05
 # if you set skip_video_stickers to true, then this is not needed
 ffmpeg_executable: /usr/bin/ffmpeg
 
+# disable db logging from gorm
+silent_db_logs: true
+
 telegram:
   # A message is sent to you from the bot when the application starts, to disable this, set this to true
   # this will notify you once a successful connect to the telegram bot has been made

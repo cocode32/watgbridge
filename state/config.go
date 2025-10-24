@@ -18,6 +18,7 @@ type Config struct {
 
 	UseGithHubBinaries bool   `yaml:"use_github_binaries"`
 	Architecture       string `yaml:"architecture"`
+	SilentDbLogs       bool   `yaml:"silent_db_logs"`
 
 	Telegram struct {
 		BotToken           string  `yaml:"bot_token"`
