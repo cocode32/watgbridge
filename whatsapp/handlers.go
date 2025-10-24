@@ -1597,19 +1597,11 @@ func PictureEventHandler(v *events.Picture) {
 
 	SendPictureToInfoUpdatesThread(v, cfg, logger, tgBot, waClient, false)
 
-	var tgThreadId int64
-	var err error
-	cocoChatThread, threadFound := database.GetChatThread(v.JID.ToNonAD())
-	if !threadFound {
-		logger.Warn(
-			"no thread found for a WhatsApp chat (handling Picture event)",
-			zap.String("chat", v.JID.String()),
-		)
-
-		tgThreadId, _, err = utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetGroupName(v.JID), "")
+	if v.JID.Server == waTypes.GroupServer {
+		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetGroupName(v.JID), "")
 		if err != nil {
 			logger.Warn(
-				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
+				"failed to create a new thread for a WhatsApp chat (handling Picture event) - FOR GROUPS",
 				zap.String("chat", v.JID.String()),
 				zap.Error(err),
 			)
@@ -1617,12 +1609,6 @@ func PictureEventHandler(v *events.Picture) {
 			return
 		}
 
-		return
-	} else {
-		tgThreadId = cocoChatThread.ThreadId
-	}
-
-	if v.JID.Server == waTypes.GroupServer {
 		changer := utils.WaGetContactName(v.Author)
 		if v.Remove {
 			updateText := fmt.Sprintf("The profile picture was removed by %s", html.EscapeString(changer))
@@ -1666,6 +1652,17 @@ func PictureEventHandler(v *events.Picture) {
 			}
 		}
 	} else {
+		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetContactName(v.JID), "")
+		if err != nil {
+			logger.Warn(
+				"failed to create a new thread for a WhatsApp chat (handling Picture event) - FOR INDIVIDUAL",
+				zap.String("chat", v.JID.String()),
+				zap.Error(err),
+			)
+			SendPictureToInfoUpdatesThread(v, cfg, logger, tgBot, waClient, true)
+			return
+		}
+
 		if v.Remove {
 			updateText := "The profile picture was removed"
 			err = utils.TgSendTextById(
