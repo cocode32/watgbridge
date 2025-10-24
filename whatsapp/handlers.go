@@ -1466,49 +1466,7 @@ func UserAboutEventHandler(v *events.UserAbout) {
 		zap.Time("updated_at", v.Timestamp),
 	)
 
-	// just send to a default thread for these updates
-	if cfg.WhatsApp.CreateThreadForInfoUpdates {
-		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates", "Info Updates")
-		if err != nil {
-			logger.Warn(
-				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
-				zap.String("chat", v.JID.String()),
-				zap.Error(err),
-			)
-			return
-		}
-
-		updateMessageText := "User's about message was updated"
-		if time.Since(v.Timestamp).Seconds() > 60 {
-			updateMessageText += fmt.Sprintf(
-				"at %s:\n\n",
-				html.EscapeString(
-					v.Timestamp.
-						In(state.State.LocalLocation).
-						Format(cfg.TimeFormat),
-				),
-			)
-		} else {
-			updateMessageText += ":\n\n"
-		}
-
-		updateMessageText += fmt.Sprintf("<code>%s</code>", html.EscapeString(v.Status))
-
-		tgBot.SendMessage(
-			cfg.Telegram.TargetChatID,
-			updateMessageText,
-			&gotgbot.SendMessageOpts{MessageThreadId: tgThreadId},
-		)
-		return
-	}
-
-	_, threadFound := database.GetChatThread(v.JID)
-	if !threadFound {
-		logger.Warn(
-			"no thread found for a WhatsApp chat (handling UserAbout event)",
-			zap.String("chat", v.JID.String()),
-		)
-	}
+	SendUserAboutMessageUpdateToInfoThread(v, cfg, logger, tgBot, false)
 
 	tgThreadId, isNewThread, err := utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetContactName(v.JID.ToNonAD()), "")
 	if err != nil {
@@ -1517,6 +1475,7 @@ func UserAboutEventHandler(v *events.UserAbout) {
 			zap.String("chat", v.JID.String()),
 			zap.Error(err),
 		)
+		SendUserAboutMessageUpdateToInfoThread(v, cfg, logger, tgBot, true)
 		return
 	}
 	SendProfilePictureToNewThread(isNewThread, tgThreadId, v.JID.ToNonAD())
@@ -1542,6 +1501,51 @@ func UserAboutEventHandler(v *events.UserAbout) {
 		updateMessageText,
 		&gotgbot.SendMessageOpts{MessageThreadId: tgThreadId},
 	)
+}
+
+func SendUserAboutMessageUpdateToInfoThread(v *events.UserAbout, cfg *state.Config, logger *zap.Logger, tgBot *gotgbot.Bot, override bool) bool {
+	if cfg.WhatsApp.CreateThreadForInfoUpdates || override {
+		var updateMessageText string
+
+		changer := utils.WaGetContactName(v.JID.ToNonAD())
+
+		if override {
+			updateMessageText += fmt.Sprintf("<b>User About Override/No Thread Found</b> %s\n\n", changer)
+		}
+		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates", "Info Updates")
+		if err != nil {
+			logger.Warn(
+				"failed to create a new thread for a WhatsApp chat (handling UserAbout event)",
+				zap.String("chat", v.JID.String()),
+				zap.Error(err),
+			)
+			return true
+		}
+
+		updateMessageText += "User's about message was updated"
+		if time.Since(v.Timestamp).Seconds() > 60 {
+			updateMessageText += fmt.Sprintf(
+				"at %s:\n\n",
+				html.EscapeString(
+					v.Timestamp.
+						In(state.State.LocalLocation).
+						Format(cfg.TimeFormat),
+				),
+			)
+		} else {
+			updateMessageText += ":\n\n"
+		}
+
+		updateMessageText += fmt.Sprintf("<code>%s</code>", html.EscapeString(v.Status))
+
+		tgBot.SendMessage(
+			cfg.Telegram.TargetChatID,
+			updateMessageText,
+			&gotgbot.SendMessageOpts{MessageThreadId: tgThreadId},
+		)
+		return true
+	}
+	return false
 }
 
 func RevokedMessageEventHandler(v *events.Message) {
