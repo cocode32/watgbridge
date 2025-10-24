@@ -206,20 +206,23 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		}
 	}
 
-	// TODO come back here
-	//senderContact := database.GetContact(v.Info.Sender.User, v.Info.SenderAlt.User)
-	//toContact := database.GetContact(v.Info.RecipientAlt.User, v.Info.Chat.User)
+	var actualPnJid waTypes.JID
+	if v.Info.Chat.Server == "lid" {
+		actualPnJid, _ = waClient.Store.LIDs.GetPNForLID(context.Background(), v.Info.Chat.ToNonAD())
+	} else {
+		actualPnJid = v.Info.Chat.ToNonAD()
+	}
 
 	if v.Info.Chat.String() == "status@broadcast" &&
 		(cfg.WhatsApp.SkipStatus ||
-			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, "// TODO come back here")) {
+			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, actualPnJid.User)) {
 		// Return if status is from ignored chat
 		logger.Debug("returning because status from a ignored chat",
 			zap.String("event_id", v.Info.ID),
 			zap.String("chat_jid", v.Info.Chat.String()),
 		)
 		return
-	} else if slices.Contains(cfg.WhatsApp.IgnoreChats, "// TODO come back here") {
+	} else if slices.Contains(cfg.WhatsApp.IgnoreChats, actualPnJid.User) {
 		// Return if the chat is ignored
 		logger.Debug("returning because message from an ignored chat",
 			zap.String("event_id", v.Info.ID),
