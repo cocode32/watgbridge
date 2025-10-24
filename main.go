@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -64,7 +65,7 @@ func main() {
 			zap.String("time_zone", cfg.TimeZone),
 			zap.Error(err),
 		)
-		panic(err)
+		panic(errors.Join(errors.New("please check your time_zone setting in the config"), err))
 	}
 	state.State.LocalLocation = locLoc
 
