@@ -119,12 +119,11 @@ whatsapp:
 
   # The default from this example is to have this value as true
   # when this value is true, it will create a new topic in telegram called "Info Updates"
+  # can use this as a fallback
   # and it will dump everyone's profile picture and user about messages in here
-  # I'm not sure if the changes to lid make this work to the individual thread
-  # recommended to keep this to true for now
+  # this will post the information in that thread as well as in the user's thread
+  # I'm just not sure about the group settings, that must still be investigated: TODO
   create_thread_for_info_updates: true
-  # these are the details that you can skip sending to the info_updates "thread"
-  # TODO - need to add user about message
   skip_profile_picture_updates: false
   skip_group_settings_updates: false
   skip_user_about_updates: false
