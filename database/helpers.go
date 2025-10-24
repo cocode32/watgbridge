@@ -61,14 +61,14 @@ func MsgIdGetWaFromTg(tgChatId, tgMsgId, tgThreadId int64) (msgId, participantId
 	return bridgePair.ID, bridgePair.ParticipantId, bridgePair.WaChatId, res.Error
 }
 
-func MsgIdGetUnread(waChatId string) (map[string]([]string), error) {
+func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
 
 	db := state.State.Database
 
 	var bridgePairs []MsgIdPair
 	res := db.Where("wa_chat_id = ? AND mark_read = false", waChatId).Find(&bridgePairs)
 
-	var msgIds = make(map[string]([]string))
+	var msgIds = make(map[string][]string)
 
 	for _, pair := range bridgePairs {
 		if _, found := msgIds[pair.ParticipantId]; !found {
@@ -478,28 +478,6 @@ func CreateCocoContactLid(id types.JID) (CocoContact, bool) {
 	result := db.Create(&userContact)
 
 	return userContact, result.Error == nil
-}
-
-// GetJidLid IDK how to put this in utils, so it's gonna live here
-func GetJidLid(chatId types.JID, altId types.JID) (string, string) {
-	lid := ""
-	jid := ""
-	if chatId.Server == "lid" {
-		lid = GetDatabaseJid(chatId)
-	} else {
-		jid = GetDatabaseJid(chatId)
-	}
-
-	if altId.Server == "lid" {
-		if lid != "" {
-			panic("both id's were lids...")
-		}
-		lid = GetDatabaseJid(altId)
-	} else {
-		jid = GetDatabaseJid(altId)
-	}
-
-	return jid, lid
 }
 
 func GetJidOrLid(id types.JID) (string, string) {
