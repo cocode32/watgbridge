@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"os"
-
 	"watgbridge/state"
 
 	"github.com/PaulSonOfLars/gotgbot/v2"
@@ -69,15 +68,17 @@ func NewWhatsAppClient() error {
 			panic(fmt.Errorf("failed to initialize production loggers for WhatsMeow client: %s", err))
 		}
 	}
-	logger = logger.Named("WaTgBridge")
+	logger = logger.Named("Coco_WaTgBridge_WhatsAppClient")
 	defer logger.Sync()
 
 	waDatabaseLogger := &whatsmeowLogger{logger: logger.Sugar().Named("WhatsMeow_Database")}
 	waClientLogger := &whatsmeowLogger{logger: logger.Sugar().Named("WhatsMeow_Client")}
 
+	// consider tweaking this to get more information from the initial login
 	store.DeviceProps.Os = proto.String(state.State.Config.WhatsApp.SessionName)
 	store.DeviceProps.RequireFullSync = proto.Bool(false)
-	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_DESKTOP.Enum()
+	// add a little flair to your linked devices
+	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_FIREFOX.Enum()
 	store.DeviceProps.HistorySyncConfig = &waCompanionReg.DeviceProps_HistorySyncConfig{
 		FullSyncDaysLimit:              proto.Uint32(0),
 		FullSyncSizeMbLimit:            proto.Uint32(0),
@@ -110,34 +111,33 @@ func NewWhatsAppClient() error {
 		}
 		for evt := range qrChan {
 			if evt.Event == "code" {
-				// var png []byte
-				// png, _err := qrcode.Encode("aklsdfjasdfaklsdfjlasdfjaskldfjasldfjaklsdfjals", qrcode.Highest, 256)
-				// if _err != nil {
-				// 	panic(_err)
-				// }
+				// print to terminal
+				qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
 
-				if state.State.TelegramBot != nil {
-					qrCodePNG, err := qrcode.Encode(evt.Code, qrcode.Highest, 512)
-					if err != nil {
-						state.State.TelegramBot.SendMessage(
-							state.State.Config.Telegram.OwnerID,
-							fmt.Sprintf(
-								"Please check your terminal and scan the QR code to login to WhatsApp. Failed to encode to PNG and send here:\n<code>%s</code>",
-								html.EscapeString(err.Error()),
-							),
-							&gotgbot.SendMessageOpts{},
-						)
-					} else {
-						state.State.TelegramBot.SendPhoto(
-							state.State.Config.Telegram.OwnerID,
-							gotgbot.InputFileByReader("qrcode.png", bytes.NewReader(qrCodePNG)),
-							&gotgbot.SendPhotoOpts{
-								Caption: "Scan the above QR code to login to WhatsApp.",
-							},
-						)
+				if !state.State.Config.WhatsApp.SkipQrCodeSend {
+					// send to bot if allowed
+					if state.State.TelegramBot != nil {
+						qrCodePNG, err := qrcode.Encode(evt.Code, qrcode.Highest, 512)
+						if err != nil {
+							state.State.TelegramBot.SendMessage(
+								state.State.Config.Telegram.OwnerID,
+								fmt.Sprintf(
+									"Please check your terminal and scan the QR code to login to WhatsApp. Failed to encode to PNG and send here:\n<code>%s</code>",
+									html.EscapeString(err.Error()),
+								),
+								&gotgbot.SendMessageOpts{},
+							)
+						} else {
+							state.State.TelegramBot.SendPhoto(
+								state.State.Config.Telegram.OwnerID,
+								gotgbot.InputFileByReader("qrcode.png", bytes.NewReader(qrCodePNG)),
+								&gotgbot.SendPhotoOpts{
+									Caption: "Scan the above QR code to login to WhatsApp.",
+								},
+							)
+						}
 					}
 				}
-				qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
 			} else {
 				logger.Info("received WhatsApp login event",
 					zap.Any("event", evt.Event),
@@ -155,6 +155,10 @@ func NewWhatsAppClient() error {
 		zap.String("push_name", client.Store.PushName),
 		zap.String("jid", client.Store.ID.String()),
 	)
+
+	if !cfg.WhatsApp.SkipStartupMessage {
+		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully logged into WhatsApp from Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
+	}
 
 	return nil
 }

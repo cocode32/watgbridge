@@ -9,6 +9,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func hasKeys(p_map *map[string]string, keys ...string) (missingKeys []string) {
@@ -26,10 +27,12 @@ func Connect() (*gorm.DB, error) {
 	dbConfig := state.State.Config.Database
 	dbType, exists := dbConfig["type"]
 	if !exists {
-		return nil, fmt.Errorf("Error: key 'type' not found in database config")
+		return nil, fmt.Errorf("error: key 'type' not found in database config")
 	}
 
-	gormConfig := gorm.Config{}
+	gormConfig := gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	}
 
 	switch dbType {
 
@@ -38,7 +41,7 @@ func Connect() (*gorm.DB, error) {
 		if missingKeys := hasKeys(&state.State.Config.Database,
 			"host", "user", "password", "dbname", "port", "time_zone",
 		); len(missingKeys) != 0 {
-			return nil, fmt.Errorf("Error: database config for type '%s' requires the keys %+v", dbType, missingKeys)
+			return nil, fmt.Errorf("error: database config for type '%s' requires the keys %+v", dbType, missingKeys)
 		}
 
 		var dns string
@@ -57,7 +60,7 @@ func Connect() (*gorm.DB, error) {
 	case "sqlite":
 
 		if missingKeys := hasKeys(&state.State.Config.Database, "path"); len(missingKeys) != 0 {
-			return nil, fmt.Errorf("Error: database config for type '%s' requires the keys %+v", dbType, missingKeys)
+			return nil, fmt.Errorf("error: database config for type '%s' requires the keys %+v", dbType, missingKeys)
 		}
 
 		return gorm.Open(sqlite.Open(dbConfig["path"]), &gormConfig)
@@ -67,7 +70,7 @@ func Connect() (*gorm.DB, error) {
 		if missingKeys := hasKeys(&state.State.Config.Database,
 			"user", "password", "host", "port", "dbname",
 		); len(missingKeys) != 0 {
-			return nil, fmt.Errorf("Error: database config for type '%s' requires the keys %+v", dbType, missingKeys)
+			return nil, fmt.Errorf("error: database config for type '%s' requires the keys %+v", dbType, missingKeys)
 		}
 
 		dns := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
@@ -81,5 +84,5 @@ func Connect() (*gorm.DB, error) {
 		return gorm.Open(mysql.Open(dns), &gormConfig)
 	}
 
-	return nil, fmt.Errorf("Database of type '%s' is not supported", dbType)
+	return nil, fmt.Errorf("database of type '%s' is not supported", dbType)
 }

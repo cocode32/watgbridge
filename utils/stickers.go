@@ -14,9 +14,9 @@ import (
 	"strconv"
 
 	"watgbridge/state"
-
-	"github.com/watgbridge/tgsconverter/libtgsconverter"
-	"github.com/watgbridge/webp"
+	
+	"github.com/cocode32/tg-sticker-converter/libtgsconverter"
+	"github.com/cocode32/watg-webp"
 	"go.uber.org/zap"
 )
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -33,34 +34,45 @@ const (
 	UploadSizeLimit   uint64 = 52428800
 )
 
-func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
-	_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
+func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
+	hasCommands := len(commands) > 0
+	var sendErr error
+
+	if hasCommands {
+		_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
+			LanguageCode: "en",
+			Scope:        gotgbot.BotCommandScopeChat{ChatId: ownerId},
+		})
+		if !skipMessage {
+			_, sendErr = b.SendMessage(ownerId, "Successfully set all commands to the bot", &gotgbot.SendMessageOpts{})
+		}
+		return errors.Join(err, sendErr)
+	}
+	_, err := b.DeleteMyCommands(&gotgbot.DeleteMyCommandsOpts{
 		LanguageCode: "en",
 		Scope:        gotgbot.BotCommandScopeDefault{},
 	})
-	return err
+	if !skipMessage {
+		_, sendErr = b.SendMessage(ownerId, "Successfully removed all commands from this bot", &gotgbot.SendMessageOpts{})
+	}
+	return errors.Join(err, sendErr)
 }
 
-func TgGetOrMakeThreadFromWa(waChatId string, tgChatId int64, threadName string) (int64, error) {
-	threadId, threadFound, err := database.ChatThreadGetTgFromWa(waChatId, tgChatId)
-	if err != nil {
-		return 0, err
-	}
+func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (int64, bool, error) {
+	jid, _ := waTypes.ParseJID(waChatId)
+	cocoChatThread, threadFound := database.GetChatThread(jid)
 
 	if !threadFound {
 		tgBot := state.State.TelegramBot
-		newForum, err := tgBot.CreateForumTopic(tgChatId, threadName, &gotgbot.CreateForumTopicOpts{})
+		newForum, err := tgBot.CreateForumTopic(state.State.Config.Telegram.TargetChatID, threadName, &gotgbot.CreateForumTopicOpts{})
 		if err != nil {
-			return 0, err
+			return 0, false, err
 		}
-		err = database.ChatThreadAddNewPair(waChatId, tgChatId, newForum.MessageThreadId)
-		if err != nil {
-			return newForum.MessageThreadId, err
-		}
-		return newForum.MessageThreadId, nil
+		err = database.AddNewChatThreadWithPush(jid, newForum.MessageThreadId, name)
+		return newForum.MessageThreadId, true, err
 	}
 
-	return threadId, nil
+	return cocoChatThread.ThreadId, false, nil
 }
 
 func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {
@@ -104,9 +116,7 @@ func TgReplyTextByContext(b *gotgbot.Bot, c *ext.Context, text string, buttons *
 		sendOpts.ReplyMarkup = buttons
 	}
 
-	if silent {
-		sendOpts.DisableNotification = true
-	}
+	sendOpts.DisableNotification = silent
 
 	msg, err := b.SendMessage(c.EffectiveChat.Id, text, sendOpts)
 	return msg, err
@@ -1115,4 +1125,31 @@ func SendMessageConfirmation(
 			}(b, msg)
 		}
 	}
+}
+
+func SendMessageDeliveredConfirmation(
+	b *gotgbot.Bot,
+	msgToForward *gotgbot.Message,
+) {
+	b.SetMessageReaction(
+		msgToForward.Chat.Id,
+		msgToForward.MessageId,
+		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
+	)
+	//switch cfg.Telegram.ConfirmationType {
+	//case "emoji":
+	//	b.SetMessageReaction(
+	//		msgToForward.Chat.Id,
+	//		msgToForward.MessageId,
+	//		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
+	//	)
+	//case "text":
+	//	msg, err := TgReplyTextByContext(b, c, "Message delivered to device", nil, cfg.Telegram.SilentConfirmation)
+	//	if err == nil {
+	//		go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
+	//			time.Sleep(15 * time.Second)
+	//			_b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+	//		}(b, msg)
+	//	}
+	//}
 }

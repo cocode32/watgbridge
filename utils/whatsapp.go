@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"log"
+	"strconv"
 	"strings"
 
 	"watgbridge/database"
@@ -28,7 +29,6 @@ func WaParseJID(s string) (types.JID, bool) {
 
 	recipient, err := types.ParseJID(s)
 
-	recipient = recipient.ToNonAD()
 	if err != nil || recipient.User == "" {
 		return recipient, false
 	}
@@ -36,9 +36,9 @@ func WaParseJID(s string) (types.JID, bool) {
 	return recipient, true
 }
 
-func WaFuzzyFindContacts(query string) (map[string]string, int, error) {
+func WaFuzzyFindContacts(query string) (map[int]string, int, error) {
 	var (
-		results      = make(map[string]string)
+		results      = make(map[int]string)
 		resultsCount = 0
 	)
 
@@ -49,27 +49,30 @@ func WaFuzzyFindContacts(query string) (map[string]string, int, error) {
 
 	var searchSpace []string
 	for _, contact := range contacts {
-		jid := contact.ID
-		if contact.FirstName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.FirstName))
+		if contact.Name != "" {
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.Name))
 		}
 		if contact.FullName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.FullName))
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.FullName))
 		}
 		if contact.PushName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.PushName))
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.PushName))
 		}
 		if contact.BusinessName != "" {
-			searchSpace = append(searchSpace, jid+"||"+strings.ToLower(contact.BusinessName))
+			searchSpace = append(searchSpace, fmt.Sprintf("%d", contact.ID)+"||"+strings.ToLower(contact.BusinessName))
 		}
 	}
 
 	fuzzyResults := fuzzy.Find(strings.ToLower(query), searchSpace)
 	for _, res := range fuzzyResults {
 		info := strings.SplitN(res, "||", 2)
+		idIndex, err := strconv.Atoi(info[0])
+		if err != nil {
+			continue
+		}
 
-		contact := contacts[info[0]]
-		if _, exists := results[info[0]]; exists {
+		contact := contacts[idIndex]
+		if _, exists := results[idIndex]; exists {
 			continue
 		}
 
@@ -90,7 +93,7 @@ func WaFuzzyFindContacts(query string) (map[string]string, int, error) {
 			}
 			name += (contact.PushName + " (p)")
 		}
-		results[contact.ID] = name
+		results[idIndex] = name
 	}
 
 	return results, resultsCount, nil
@@ -106,45 +109,60 @@ func WaGetGroupName(jid types.JID) string {
 	return groupInfo.Name
 }
 
-func WaGetContactName(jid types.JID) string {
-	if jid.ToNonAD() == state.State.WhatsAppClient.Store.ID.ToNonAD() {
-		return "You"
-	}
-
-	var name string
-
-	firstName, fullName, pushName, businessName, err := database.ContactNameGet(jid.User)
-	if err == nil {
-		if fullName != "" {
-			name = fullName
-		} else if businessName != "" {
-			name = businessName + " (" + jid.User + ")"
-		} else if pushName != "" {
-			name = pushName + " (" + jid.User + ")"
-		} else if firstName != "" {
-			name = firstName + " (" + jid.User + ")"
+func WaGetContactName(waId types.JID) string {
+	cocoContact, found := database.FindCocoContactSingleId(waId)
+	if !found {
+		jid := waId
+		if jid.ToNonAD() == state.State.WhatsAppClient.Store.ID.ToNonAD() {
+			return "You"
 		}
-	} else {
-		waClient := state.State.WhatsAppClient
-		contact, err := waClient.Store.Contacts.GetContact(context.Background(), jid)
-		if err == nil && contact.Found {
-			if contact.FullName != "" {
-				name = contact.FullName
-			} else if contact.BusinessName != "" {
-				name = contact.BusinessName + " (" + jid.User + ")"
-			} else if contact.PushName != "" {
-				name = contact.PushName + " (" + jid.User + ")"
-			} else if contact.FirstName != "" {
-				name = contact.FirstName + " (" + jid.User + ")"
+
+		var name string
+
+		number, firstName, fullName, pushName, businessName, err := database.ContactNameGet(jid)
+		if err == nil {
+			name = firstNonEmpty(fullName, firstName, pushName, businessName)
+			if name != "" {
+				name += " (" + number + ")"
+			}
+		} else {
+			waClient := state.State.WhatsAppClient
+			contact, err := waClient.Store.Contacts.GetContact(context.Background(), jid)
+			if err == nil && contact.Found {
+				name = firstNonEmpty(contact.FullName, contact.FirstName, contact.PushName, contact.BusinessName)
+				if name != "" {
+					name += " (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+				}
 			}
 		}
+
+		if name == "" {
+			name = "User Unknown (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+		}
+
+		return name
+	}
+	var name string
+
+	name = firstNonEmpty(cocoContact.FullName, cocoContact.Name, cocoContact.PushName, cocoContact.BusinessName)
+	if name != "" {
+		name += " (" + database.GetStringJidAsPhoneNumber(cocoContact.Jid) + ")"
 	}
 
 	if name == "" {
-		name = jid.User
+		name = "User Not Found (" + database.GetStringJidAsPhoneNumber(cocoContact.Jid) + ")"
 	}
 
 	return name
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func WaTagAll(group types.JID, msg *waE2E.Message, msgId, msgSender string, msgIsFromMe bool) {
@@ -191,7 +209,7 @@ func WaTagAll(group types.JID, msg *waE2E.Message, msgId, msgSender string, msgI
 	}
 
 	if !msgIsFromMe {
-		tagsThreadId, err := TgGetOrMakeThreadFromWa("mentions", cfg.Telegram.TargetChatID, "Mentions")
+		tagsThreadId, _, err := TgGetOrMakeThreadFromWa("mentions@broadcast", "Mentions", "Mentions")
 		if err != nil {
 			TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retreive corresponding thread id for status/calls/tags", err)
 			return

@@ -1,11 +1,11 @@
 package telegram
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
 	"time"
-
 	"watgbridge/state"
 	"watgbridge/telegram/middlewares"
 
@@ -31,7 +31,7 @@ func NewTelegramClient() error {
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("could not initialize telegram bot : %s", err)
+		panic(errors.Join(err, errors.New(fmt.Sprintf("could not initialize telegram bot : %s", err))))
 	}
 	state.State.TelegramBot = bot
 
@@ -79,6 +79,10 @@ func NewTelegramClient() error {
 		zap.String("username", "@"+bot.Username),
 		zap.String("api_url", cfg.Telegram.APIURL),
 	)
+
+	if !cfg.Telegram.SkipStartupMessage {
+		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully logged into your telegram bot from Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
+	}
 
 	return nil
 }

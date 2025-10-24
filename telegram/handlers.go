@@ -3,15 +3,12 @@ package telegram
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"io"
 	"net/http"
-	"os"
-	"os/exec"
-	"path"
 	"strings"
-	"syscall"
 	"time"
 
 	"watgbridge/database"
@@ -96,10 +93,6 @@ func AddTelegramHandlers() {
 			"Get the profile picture of user or group using its ID",
 		},
 		waTgBridgeCommand{
-			handlers.NewCommand("updateandrestart", UpdateAndRestartHandler),
-			"Try to fetch updates from GitHub and build and restart the bot",
-		},
-		waTgBridgeCommand{
 			handlers.NewCommand("synctopicnames", SyncTopicNamesHandler),
 			"Update the names of the topics created",
 		},
@@ -171,16 +164,15 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 			waChatID = participantID
 		}
 	} else {
-		waChatID, err = database.ChatThreadGetWaFromTg(c.EffectiveChat.Id, c.EffectiveMessage.MessageThreadId)
-		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to find the chat pairing between this topic and a WhatsApp chat", err)
-		} else if waChatID == "" {
-			if c.EffectiveMessage.MessageThreadId != 0 {
-				_, err = utils.TgReplyTextByContext(b, c, "No mapping found between current topic and a WhatsApp chat", nil, false)
-				return err
-			}
-			return nil
+		_, found := database.ChatThreadGetWaFromTg(c.EffectiveMessage.MessageThreadId)
+		if !found {
+			return utils.TgReplyWithErrorByContext(b, c, "Failed to find the chat pairing between this topic and a WhatsApp chat", errors.New("god only knows"))
 		}
+		if c.EffectiveMessage.MessageThreadId != 0 {
+			_, err = utils.TgReplyTextByContext(b, c, "No mapping found between current topic and a WhatsApp chat", nil, false)
+			return err
+		}
+		return nil
 	}
 
 	// Status Update
@@ -283,9 +275,16 @@ func FindContactHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	outputString := fmt.Sprintf("Here are the %v matching contacts:\n\n", resultsCount)
-	for jid, name := range results {
-		outputString += fmt.Sprintf("- <i>%s</i> [ <code>%s</code> ]\n",
-			html.EscapeString(name), html.EscapeString(jid))
+	for contactIdFromDatabase, name := range results {
+		cocoContact, found := database.FindCocoContactById(int32(contactIdFromDatabase))
+		if !found {
+			outputString += fmt.Sprintf("- <i>%s</i> [ <code>%s</code> ]\n",
+				html.EscapeString(name), html.EscapeString(fmt.Sprintf("-- unknown --")))
+		} else {
+			jid, _ := waTypes.ParseJID(cocoContact.Jid)
+			outputString += fmt.Sprintf("- <i>%s</i> [ <code>%s</code> ]\n",
+				html.EscapeString(name), html.EscapeString(jid.User))
+		}
 
 		if len(outputString) >= 1800 {
 			utils.TgReplyTextByContext(b, c, outputString, nil, false)
@@ -298,71 +297,6 @@ func FindContactHandler(b *gotgbot.Bot, c *ext.Context) error {
 		_, err = utils.TgReplyTextByContext(b, c, outputString, nil, false)
 		return err
 	}
-	return nil
-}
-
-func UpdateAndRestartHandler(b *gotgbot.Bot, c *ext.Context) error {
-	if !utils.TgUpdateIsAuthorized(b, c) {
-		return nil
-	}
-
-	cfg := state.State.Config
-
-	if cfg.UseGithHubBinaries {
-		if cfg.Architecture == "" {
-			return utils.TgReplyWithErrorByContext(b, c,
-				"Please set an architecture field in config file\nCan be 'amd64' or 'aarch64'",
-				nil)
-		}
-
-		RELEASE_URL_FORMAT := "https://github.com/akshettrj/watgbridge/releases/latest/download/watgbridge_linux_%s"
-
-		url := fmt.Sprintf(RELEASE_URL_FORMAT, cfg.Architecture)
-		err := utils.DownloadFileToLocalByURL("watgbridge_temp", url)
-		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to download the release", err)
-		}
-
-		err = os.Rename("watgbridge_temp", "watgbridge")
-		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to rename the downloaded file", err)
-		}
-
-		err = os.Chmod("watgbridge", 0755)
-		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to make the file executable", err)
-		}
-
-		utils.TgReplyTextByContext(b, c, "Successfully downloaded and prepared the release, now restarting...", nil, false)
-
-	} else {
-		gitPullCmd := exec.Command(cfg.GitExecutable, "pull", "--rebase")
-		err := gitPullCmd.Run()
-		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to execute 'git pull --rebase' command", err)
-		}
-
-		utils.TgReplyTextByContext(b, c, "Successfully pulled from GitHub", nil, false)
-
-		goBuildCmd := exec.Command(cfg.GoExecutable, "build")
-		err = goBuildCmd.Run()
-		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to execute 'go build' command", err)
-		}
-
-		utils.TgReplyTextByContext(b, c, "Successfully built the binary, now restarting...", nil, false)
-
-	}
-
-	os.Setenv("WATG_IS_RESTARTED", "1")
-	os.Setenv("WATG_CHAT_ID", fmt.Sprint(c.EffectiveChat.Id))
-	os.Setenv("WATG_MESSAGE_ID", fmt.Sprint(c.EffectiveMessage.MessageId))
-
-	err := syscall.Exec(path.Join(".", "watgbridge"), []string{}, os.Environ())
-	if err != nil {
-		return utils.TgReplyWithErrorByContext(b, c, "Failed to run exec syscall to restart the bot", err)
-	}
-
 	return nil
 }
 
@@ -381,8 +315,22 @@ func SyncContactsHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
+
+	// TODO this code is duplicated it needs to be cleaned
+	wrappedContacts := make(map[waTypes.JID]database.CocoContactInfo, len(contacts))
+	for jid, info := range contacts {
+		lid, _ := waClient.Store.LIDs.GetLIDForPN(context.Background(), jid.ToNonAD())
+		wrappedContacts[jid] = database.CocoContactInfo{
+			ContactInfo: &info,
+			Lid:         lid,
+		}
+	}
+
 	if err == nil {
-		database.ContactNameBulkAddOrUpdate(contacts)
+		err = database.ContactNameBulkAddOrUpdate(wrappedContacts)
+	}
+	if err != nil {
+		_, err = utils.TgReplyTextByContext(b, c, "Something broke when we tried to insert the contacts into the database", nil, false)
 	}
 
 	_, err = utils.TgReplyTextByContext(b, c, "Successfully synced the contact list", nil, false)
@@ -465,7 +413,6 @@ func SetTargetGroupChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	var (
-		cfg      = state.State.Config
 		groupID  = args[1]
 		waClient = state.State.WhatsAppClient
 	)
@@ -477,15 +424,13 @@ func SetTargetGroupChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 	groupJID = groupInfo.JID
 
-	_, threadFound, err := database.ChatThreadGetTgFromWa(groupJID.String(), cfg.Telegram.TargetChatID)
-	if err != nil {
-		return utils.TgReplyWithErrorByContext(b, c, "Failed to check database for existing mapping", err)
-	} else if threadFound {
+	_, threadFound := database.GetChatThread(groupJID)
+	if threadFound {
 		_, err = utils.TgReplyTextByContext(b, c, "A topic already exists in database for the given WhatsApp chat. Aborting...", nil, false)
 		return err
 	}
 
-	err = database.ChatThreadAddNewPair(groupJID.String(), cfg.Telegram.TargetChatID, c.EffectiveMessage.MessageThreadId)
+	err = database.AddNewChatThread(groupJID, c.EffectiveMessage.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to add the mapping in database. Unsuccessful", err)
 	}
@@ -505,20 +450,16 @@ func UnlinkThreadHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	var (
-		tgChatId   = c.EffectiveChat.Id
 		tgThreadId = c.EffectiveMessage.MessageThreadId
 	)
 
-	waChatId, err := database.ChatThreadGetWaFromTg(tgChatId, tgThreadId)
-	if err != nil {
-		err = utils.TgReplyWithErrorByContext(b, c, "Failed to get existing chat ID pairing", err)
-		return err
-	} else if waChatId == "" {
-		_, err := utils.TgReplyTextByContext(b, c, "No existing chat pairing found!!", nil, false)
+	_, found := database.ChatThreadGetWaFromTg(tgThreadId)
+	if !found {
+		err := utils.TgReplyWithErrorByContext(b, c, "Failed to get existing chat ID pairing", errors.New("idk man"))
 		return err
 	}
 
-	err = database.ChatThreadDropPairByTg(tgChatId, tgThreadId)
+	err := database.ChatThreadDropPairByTg(tgThreadId)
 	if err != nil {
 		err = utils.TgReplyWithErrorByContext(b, c, "Failed to delete the thread chat pairing", err)
 		return err
@@ -538,31 +479,32 @@ func handleBlockUnblockUser(b *gotgbot.Bot, c *ext.Context, action events.Blockl
 	}
 
 	var (
-		tgChatId   = c.EffectiveChat.Id
 		tgThreadId = c.EffectiveMessage.MessageThreadId
 	)
 
-	waChatId, err := database.ChatThreadGetWaFromTg(tgChatId, tgThreadId)
-	if err != nil {
-		err = utils.TgReplyWithErrorByContext(b, c, "Failed to get existing chat ID pairing", err)
+	_, found := database.ChatThreadGetWaFromTg(tgThreadId)
+	if !found {
+		err := utils.TgReplyWithErrorByContext(b, c, "Failed to get existing chat ID pairing", errors.New("idk man"))
 		return err
-	} else if waChatId == "" {
-		_, err := utils.TgReplyTextByContext(b, c, "No existing chat pairing found!!", nil, false)
-		return err
-	}
-	jid, _ := utils.WaParseJID(waChatId)
-	_, err = state.State.WhatsAppClient.UpdateBlocklist(jid, action)
-	if err != nil {
-		err = utils.TgReplyWithErrorByContext(b, c, "Failed to change the blocklist status", err)
-		return err
-	}
-	actionText := "blocked"
-	if action == events.BlocklistChangeActionUnblock {
-		actionText = "unblocked"
 	}
 
-	_, err = utils.TgReplyTextByContext(b, c, fmt.Sprintf("Successfully %s the user", actionText), nil, false)
+	// TODO implement
+	err := utils.TgReplyWithErrorByContext(b, c, "This functionality has not been implemented. See code", errors.New("idk man"))
 	return err
+
+	//jid, _ := utils.WaParseJID(waChatId)
+	//_, err = state.State.WhatsAppClient.UpdateBlocklist(jid, action)
+	//if err != nil {
+	//	err = utils.TgReplyWithErrorByContext(b, c, "Failed to change the blocklist status", err)
+	//	return err
+	//}
+	//actionText := "blocked"
+	//if action == events.BlocklistChangeActionUnblock {
+	//	actionText = "unblocked"
+	//}
+	//
+	//_, err = utils.TgReplyTextByContext(b, c, fmt.Sprintf("Successfully %s the user", actionText), nil, false)
+	//return err
 }
 
 func BlockCommandHandler(b *gotgbot.Bot, c *ext.Context) error {
@@ -592,21 +534,18 @@ func SetTargetPrivateChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	var (
-		cfg     = state.State.Config
 		groupID = args[1]
 	)
 
 	userJID, _ := utils.WaParseJID(groupID)
 
-	_, threadFound, err := database.ChatThreadGetTgFromWa(userJID.String(), cfg.Telegram.TargetChatID)
-	if err != nil {
-		return utils.TgReplyWithErrorByContext(b, c, "Failed to check database for existing mapping", err)
-	} else if threadFound {
-		_, err = utils.TgReplyTextByContext(b, c, "A topic already exists in database for the given WhatsApp chat. Aborting...", nil, false)
+	_, threadFound := database.GetChatThread(userJID)
+	if threadFound {
+		_, err := utils.TgReplyTextByContext(b, c, "A topic already exists in database for the given WhatsApp chat. Aborting...", nil, false)
 		return err
 	}
 
-	err = database.ChatThreadAddNewPair(userJID.String(), cfg.Telegram.TargetChatID, c.EffectiveMessage.MessageThreadId)
+	err := database.AddNewChatThread(userJID, c.EffectiveMessage.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to add the mapping in database. Unsuccessful", err)
 	}
@@ -673,38 +612,41 @@ func SyncTopicNamesHandler(b *gotgbot.Bot, c *ext.Context) error {
 		return nil
 	}
 
-	chatThreadPairs, err := database.ChatThreadGetAllPairs(c.EffectiveChat.Id)
+	_, err := database.ChatThreadGetAllPairs()
 	if err != nil {
-		return utils.TgReplyWithErrorByContext(b, c, "failed to retreive chat thread pairs from database", err)
+		return utils.TgReplyWithErrorByContext(b, c, "failed to retrieve chat thread pairs from database", err)
 	}
 
-	for _, pair := range chatThreadPairs {
-		var (
-			waChatId   = pair.ID
-			tgThreadId = pair.TgThreadId
-		)
-
-		if waChatId == "status@broadcast" || waChatId == "calls" || waChatId == "mentions" {
-			continue
-		}
-		waChatJid, _ := utils.WaParseJID(waChatId)
-
-		var newName string
-		if waChatJid.Server == waTypes.GroupServer {
-			newName = utils.WaGetGroupName(waChatJid)
-		} else {
-			newName = utils.WaGetContactName(waChatJid)
-		}
-
-		b.EditForumTopic(c.EffectiveChat.Id, tgThreadId, &gotgbot.EditForumTopicOpts{
-			Name:              newName,
-			IconCustomEmojiId: nil,
-		})
-		time.Sleep(5 * time.Second)
-	}
-
-	_, err = c.EffectiveMessage.Reply(b, "Successfully synced topic names", nil)
+	_, err = c.EffectiveMessage.Reply(b, "This hasn't been implemented; try again later", nil)
 	return err
+	// TODO fix functionality here
+	//for _, pair := range chatThreadPairs {
+	//	var (
+	//		waChatId   = pair.ID
+	//		tgThreadId = pair.ThreadId
+	//	)
+	//
+	//	if waChatId == "status@broadcast" || waChatId == "calls" || waChatId == "mentions" {
+	//		continue
+	//	}
+	//	waChatJid, _ := utils.WaParseJID(waChatId)
+	//
+	//	var newName string
+	//	if waChatJid.Server == waTypes.GroupServer {
+	//		newName = utils.WaGetGroupName(waChatJid)
+	//	} else {
+	//		newName = utils.WaGetContactName(waChatJid)
+	//	}
+	//
+	//	b.EditForumTopic(c.EffectiveChat.Id, tgThreadId, &gotgbot.EditForumTopicOpts{
+	//		Name:              newName,
+	//		IconCustomEmojiId: nil,
+	//	})
+	//	time.Sleep(5 * time.Second)
+	//}
+	//
+	//_, err = c.EffectiveMessage.Reply(b, "Successfully synced topic names", nil)
+	//return err
 }
 
 func HelpCommandHandler(b *gotgbot.Bot, c *ext.Context) error {
