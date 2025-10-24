@@ -88,13 +88,17 @@ func PairSuccessHandler(event *events.PairSuccess) {
 }
 
 func ConnectedHandler() {
-	// TODO maybe add something in here in the future? The initial sync has moved to the more correct place
 	var (
 		logger = state.State.Logger
+		cfg    = state.State.Config
 	)
 	defer logger.Sync()
 
 	logger.Info("successfully connected to whatsapp")
+
+	if !cfg.WhatsApp.SkipStartupMessage {
+		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully connected to WhatsApp from Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
+	}
 }
 
 func AppStateSyncHandler(event *events.AppStateSyncComplete) {
