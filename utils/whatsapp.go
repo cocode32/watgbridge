@@ -119,57 +119,50 @@ func WaGetContactName(waId types.JID) string {
 
 		var name string
 
-		firstName, fullName, pushName, businessName, err := database.ContactNameGet(jid)
+		number, firstName, fullName, pushName, businessName, err := database.ContactNameGet(jid)
 		if err == nil {
-			if fullName != "" {
-				name = fullName
-			} else if businessName != "" {
-				name = businessName + " (" + jid.User + ")"
-			} else if pushName != "" {
-				name = pushName + " (" + jid.User + ")"
-			} else if firstName != "" {
-				name = firstName + " (" + jid.User + ")"
+			name = firstNonEmpty(fullName, firstName, pushName, businessName)
+			if name != "" {
+				name += " (" + number + ")"
 			}
 		} else {
 			waClient := state.State.WhatsAppClient
 			contact, err := waClient.Store.Contacts.GetContact(context.Background(), jid)
 			if err == nil && contact.Found {
-				if contact.FullName != "" {
-					name = contact.FullName
-				} else if contact.BusinessName != "" {
-					name = contact.BusinessName + " (" + jid.User + ")"
-				} else if contact.PushName != "" {
-					name = contact.PushName + " (" + jid.User + ")"
-				} else if contact.FirstName != "" {
-					name = contact.FirstName + " (" + jid.User + ")"
+				name = firstNonEmpty(contact.FullName, contact.FirstName, contact.PushName, contact.BusinessName)
+				if name != "" {
+					name += " (" + database.GetDatabaseJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
 				}
 			}
 		}
 
 		if name == "" {
-			name = "User (" + jid.User + ")"
+			name = "User Unknown (" + database.GetDatabaseJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
 		}
 
 		return name
 	}
 	var name string
-	var jid string
 
-	if cocoContact.FullName != "" {
-		name = cocoContact.FullName
-	} else if cocoContact.BusinessName != "" {
-		name = cocoContact.BusinessName + " (" + jid + ")"
-	} else if cocoContact.PushName != "" {
-		name = cocoContact.PushName + " (" + jid + ")"
-	} else if cocoContact.Name != "" {
-		name = cocoContact.Name + " (" + jid + ")"
+	name = firstNonEmpty(cocoContact.FullName, cocoContact.Name, cocoContact.PushName, cocoContact.BusinessName)
+	if name != "" {
+		name += " (" + database.GetDatabaseJidAsPhoneNumber(cocoContact.Jid) + ")"
 	}
 
 	if name == "" {
-		name = "User (" + jid + ")"
+		name = "User Not Found (" + database.GetDatabaseJidAsPhoneNumber(cocoContact.Jid) + ")"
 	}
 
 	return name
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func WaTagAll(group types.JID, msg *waE2E.Message, msgId, msgSender string, msgIsFromMe bool) {

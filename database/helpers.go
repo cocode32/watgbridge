@@ -309,14 +309,14 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 	return res.Error
 }
 
-func ContactNameGet(waUserId types.JID) (string, string, string, string, error) {
+func ContactNameGet(waUserId types.JID) (string, string, string, string, string, error) {
 	contact, found := FindCocoContactSingleId(waUserId)
 
 	if !found {
-		return "", "", "", "", errors.New("contact not found")
+		return "", "", "", "", "", errors.New("contact not found")
 	}
 
-	return contact.Name, contact.FullName, contact.PushName, contact.BusinessName, nil
+	return GetDatabaseJidAsPhoneNumber(contact.Jid), contact.Name, contact.FullName, contact.PushName, contact.BusinessName, nil
 }
 
 func ContactGetAll() (map[int]CocoContact, error) {
@@ -536,4 +536,12 @@ func GetJidOrLid(id types.JID) (string, string) {
 
 func GetDatabaseJid(j types.JID) string {
 	return j.ToNonAD().String()
+}
+
+func GetDatabaseJidAsPhoneNumber(j string) string {
+	jid, _ := types.ParseJID(j)
+	if jid.Server == "lid" {
+		return "Unknown Number from WhatsApp"
+	}
+	return jid.ToNonAD().User
 }

@@ -1490,10 +1490,7 @@ func PictureEventHandler(v *events.Picture) {
 			)
 			return
 		}
-		changer := utils.WaGetContactName(v.Author)
-		if changer == "" {
-			changer = utils.WaGetContactName(v.JID.ToNonAD())
-		}
+		changer := utils.WaGetContactName(v.JID.ToNonAD())
 		if v.Remove {
 			updateText := fmt.Sprintf("The profile picture was removed by %s", html.EscapeString(changer))
 			err = utils.TgSendTextById(
