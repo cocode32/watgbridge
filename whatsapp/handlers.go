@@ -34,6 +34,9 @@ func WhatsAppEventHandler(evt interface{}) {
 	case *events.Connected:
 		ConnectedHandler()
 
+	case *events.AppStateSyncComplete:
+		AppStateSyncHandler(whatsAppEvent)
+
 	case *events.LoggedOut:
 		LogoutHandler(whatsAppEvent)
 
@@ -73,10 +76,19 @@ func PairSuccessHandler(event *events.PairSuccess) {
 }
 
 func ConnectedHandler() {
-	// TODO this is very shitty, but I'll fix it later
-	time.Sleep(45 * time.Second)
-	InitialSyncContactsHandler()
-	// There seems to be a race condition with doing this here
+	// TODO maybe add something in here in the future? The initial sync has moved to the more correct place
+	var (
+		logger = state.State.Logger
+	)
+	defer logger.Sync()
+
+	logger.Debug("successfully connected to whatsapp")
+}
+
+func AppStateSyncHandler(event *events.AppStateSyncComplete) {
+	if event.Name == appstate.WAPatchCriticalUnblockLow {
+		InitialSyncContactsHandler()
+	}
 }
 
 func HandleWhatsAppMessage(event *events.Message) {
@@ -1945,15 +1957,6 @@ func InitialSyncContactsHandler() {
 	logger.Info(
 		"Starting syncing contacts... may take some time",
 	)
-
-	err := waClient.FetchAppState(context.Background(), appstate.WAPatchCriticalUnblockLow, false, false)
-	if err != nil {
-		logger.Error(
-			"Failed to sync contacts",
-			zap.Error(err),
-		)
-		return
-	}
 
 	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
 	if err == nil {
