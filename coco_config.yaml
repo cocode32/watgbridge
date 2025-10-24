@@ -14,38 +14,39 @@ time_format: Mon, 2006-01-02 @ 15:04:05
 ffmpeg_executable: /usr/bin/ffmpeg
 
 telegram:
-    bot_token: "GET_YOUR_TOKEN_FOR_BOT_FATHER"
-    self_hosted_api: false
-    api_url: "" # example -- only use this if the self_hosted_api is true http://localhost:4887
-
-    # These IDS are your Telegram ID. Use a bot like @myidbot to get your ID
-    sudo_users_id:
-        - XYYYXXXXXXXXX
-    # This is the owner that the bot will talk to -- sending you the QR code when it starts
-    owner_id: XYYYXXXXXXXXX
-    # Add @myidbot to your group and use /getgroupid to get this id. Make sure that it starts with -1
-    target_chat_id: -100ZZZZZZAAAAAAAA
-
-    skip_video_stickers: false
-    # the bot commands are set automatically. If you would like to "clean" your bot for example, to remove all watgbridge commands, set this to true
-    remove_bot_commands: false
-    # send "online" to whatsapp when you are on telegram?
-    send_my_presence: false
-    # TODO work in progress
-    send_my_read_receipts: true
-    # don't receive notifications from the bot (specifically in the group, on telegram) when you react or send a message
-    silent_confirmation: true
-    # options: "emoji", "text"
-    # this applies to messages sent from telegram to whatsapp. confirmation comes from the bot
-    confirmation_type: emoji
   # A message is sent to you from the bot when the application starts, to disable this, set this to true
   # this will notify you once a successful connect to the telegram bot has been made
-    skip_startup_message: true
-    # if you would like to send a message as a "view-once" message, wrap the entire message as a spoiler
-    # setting this to true will enable the above
-    spoiler_as_viewonce: false
-    # when this is set to true, it will allow you to reply with a single emoji on a message, and this emoji will be used as a reaction on whatsapp
-    reactions: true
+  skip_startup_message: true
+
+  bot_token: "GET_YOUR_TOKEN_FOR_BOT_FATHER"
+  self_hosted_api: false
+  api_url: "" # example -- only use this if the self_hosted_api is true http://localhost:4887
+
+  # These IDS are your Telegram ID. Use a bot like @myidbot to get your ID
+  sudo_users_id:
+    - XYYYXXXXXXXXX
+  # This is the owner that the bot will talk to -- sending you the QR code when it starts
+  owner_id: XYYYXXXXXXXXX
+  # Add @myidbot to your group and use /getgroupid to get this id. Make sure that it starts with -1
+  target_chat_id: -100ZZZZZZAAAAAAAA
+
+  skip_video_stickers: false
+  # the bot commands are set automatically. If you would like to "clean" your bot for example, to remove all watgbridge commands, set this to true
+  remove_bot_commands: false
+  # send "online" to whatsapp when you are on telegram?
+  send_my_presence: false
+  # TODO work in progress
+  send_my_read_receipts: true
+  # don't receive notifications from the bot (specifically in the group, on telegram) when you react or send a message
+  silent_confirmation: true
+  # options: "emoji", "text"
+  # this applies to messages sent from telegram to whatsapp. confirmation comes from the bot
+  confirmation_type: emoji
+  # if you would like to send a message as a "view-once" message, wrap the entire message as a spoiler
+  # setting this to true will enable the above
+  spoiler_as_viewonce: false
+  # when this is set to true, it will allow you to reply with a single emoji on a message, and this emoji will be used as a reaction on whatsapp
+  reactions: true
 
 whatsapp:
   # get more verbose logging
@@ -140,6 +141,8 @@ whatsapp:
   # skip_initial_skip: false
   # TODO - add skip profile picture send on new chat
   # skip_initial_photo: false
+  # skips the qr code sent to the telegram bot
+  skip_qr_code: false
 
 # database for this application. The supported databases are mysql, postgres and sqlite
 database:

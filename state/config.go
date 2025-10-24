@@ -69,6 +69,7 @@ type Config struct {
 		CreateThreadForInfoUpdates     bool     `yaml:"create_thread_for_info_updates"`
 		AllowEveryoneTagging           bool     `yaml:"allow_everyone_tagging"`
 		SkipStartupMessage             bool     `yaml:"skip_startup_message"`
+		SkipQrCodeSend                 bool     `yaml:"skip_qr_code"`
 	} `yaml:"whatsapp"`
 
 	Database map[string]string `yaml:"database"`
