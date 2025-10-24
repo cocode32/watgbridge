@@ -275,9 +275,16 @@ func FindContactHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 
 	outputString := fmt.Sprintf("Here are the %v matching contacts:\n\n", resultsCount)
-	for jid, name := range results {
-		outputString += fmt.Sprintf("- <i>%s</i> [ <code>%s</code> ]\n",
-			html.EscapeString(name), html.EscapeString(fmt.Sprintf("I need to fix this, here is the contact ID from the database %d", jid)))
+	for contactIdFromDatabase, name := range results {
+		cocoContact, found := database.FindCocoContactById(int32(contactIdFromDatabase))
+		if !found {
+			outputString += fmt.Sprintf("- <i>%s</i> [ <code>%s</code> ]\n",
+				html.EscapeString(name), html.EscapeString(fmt.Sprintf("-- unknown --")))
+		} else {
+			jid, _ := waTypes.ParseJID(cocoContact.Jid)
+			outputString += fmt.Sprintf("- <i>%s</i> [ <code>%s</code> ]\n",
+				html.EscapeString(name), html.EscapeString(jid.User))
+		}
 
 		if len(outputString) >= 1800 {
 			utils.TgReplyTextByContext(b, c, outputString, nil, false)
