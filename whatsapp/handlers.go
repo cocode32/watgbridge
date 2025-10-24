@@ -82,7 +82,7 @@ func ConnectedHandler() {
 	)
 	defer logger.Sync()
 
-	logger.Debug("successfully connected to whatsapp")
+	logger.Info("successfully connected to whatsapp")
 }
 
 func AppStateSyncHandler(event *events.AppStateSyncComplete) {
