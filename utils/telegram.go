@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -33,8 +34,9 @@ const (
 	UploadSizeLimit   uint64 = 52428800
 )
 
-func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
+func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
 	hasCommands := len(commands) > 0
+	var sendErr error
 
 	if hasCommands {
 		_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
@@ -43,13 +45,19 @@ func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error
 			// TODO need to get your actual ID - once I can confirm that this doesn't show for me
 			Scope: gotgbot.BotCommandScopeChat{ChatId: DownloadSizeLimit},
 		})
-		return err
+		if !skipMessage {
+			_, sendErr = b.SendMessage(ownerId, "Successfully set all commands to the bot", &gotgbot.SendMessageOpts{})
+		}
+		return errors.Join(err, sendErr)
 	}
 	_, err := b.DeleteMyCommands(&gotgbot.DeleteMyCommandsOpts{
 		LanguageCode: "en",
 		Scope:        gotgbot.BotCommandScopeDefault{},
 	})
-	return err
+	if !skipMessage {
+		_, sendErr = b.SendMessage(ownerId, "Successfully removed all commands from this bot", &gotgbot.SendMessageOpts{})
+	}
+	return errors.Join(err, sendErr)
 }
 
 func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (int64, error) {

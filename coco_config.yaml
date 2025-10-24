@@ -38,7 +38,8 @@ telegram:
     # options: "emoji", "text"
     # this applies to messages sent from telegram to whatsapp. confirmation comes from the bot
     confirmation_type: emoji
-    # A message is sent to you from the bot when the application starts, to disable this, set this to true
+  # A message is sent to you from the bot when the application starts, to disable this, set this to true
+  # this will notify you once a successful connect to the telegram bot has been made
     skip_startup_message: true
     # if you would like to send a message as a "view-once" message, wrap the entire message as a spoiler
     # setting this to true will enable the above
@@ -54,6 +55,10 @@ whatsapp:
   login_database:
     type: sqlite3
     url: file:coco_wawebstore.db?_foreign_keys=on
+
+  # A message is sent to you from the bot when the application starts, to disable this, set this to true
+  # this will notify you once a successful connection to the whatsapp client has been made
+  skip_startup_message: true
 
   # metadata to attach to stickers created by the bridge
   # I haven't tested this with ["spaces"], so use a space with caution xD
@@ -130,6 +135,11 @@ whatsapp:
   # recommendation is to keep this set to true, so that you can have all messages in telegram
   # if you feel like you don't care about your own messages, turn this off
   send_my_messages_from_other_devices: true
+
+  # TODO - add skip initial skip, for the crazy people I guess? xD
+  # skip_initial_skip: false
+  # TODO - add skip profile picture send on new chat
+  # skip_initial_photo: false
 
 # database for this application. The supported databases are mysql, postgres and sqlite
 database:

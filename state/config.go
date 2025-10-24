@@ -3,9 +3,9 @@ package state
 import (
 	"fmt"
 	"io"
-	"net/url"
 	"os"
 
+	"github.com/PaulSonOfLars/gotgbot/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -68,6 +68,7 @@ type Config struct {
 		SendMyMessagesFromOtherDevices bool     `yaml:"send_my_messages_from_other_devices"`
 		CreateThreadForInfoUpdates     bool     `yaml:"create_thread_for_info_updates"`
 		AllowEveryoneTagging           bool     `yaml:"allow_everyone_tagging"`
+		SkipStartupMessage             bool     `yaml:"skip_startup_message"`
 	} `yaml:"whatsapp"`
 
 	Database map[string]string `yaml:"database"`
@@ -96,24 +97,6 @@ func (cfg *Config) LoadConfig() error {
 		return fmt.Errorf("could not parse config file : %s", err)
 	}
 
-	whatsappLoginDB := cfg.WhatsApp.LoginDatabase
-	if whatsappLoginDB.Type == "sqlite3" {
-		parsedUrl, err := url.Parse(whatsappLoginDB.URL)
-		if err != nil {
-			return fmt.Errorf("whatsapp Login Database URL is not a valid URL")
-		}
-		if _, found := parsedUrl.Query()["_foreign_keys"]; !found {
-			q := parsedUrl.Query()
-			q.Set("_foreign_keys", "on")
-			if q.Has("foreign_keys") {
-				q.Del("foreign_keys")
-			}
-			parsedUrl.RawQuery = q.Encode()
-			cfg.WhatsApp.LoginDatabase.URL = parsedUrl.String()
-			cfg.SaveConfig()
-		}
-	}
-
 	deprecatedOptions := GetDeprecatedConfigOptions(cfg)
 	if deprecatedOptions != nil {
 		fmt.Println("The following options have been deprecated/removed:")
@@ -125,36 +108,39 @@ func (cfg *Config) LoadConfig() error {
 	return nil
 }
 
-func (cfg *Config) SaveConfig() error {
-	configFilePath := cfg.Path
-
-	configFile, err := os.Create(configFilePath)
-	if err != nil {
-		return fmt.Errorf("could not open config file : %s", err)
-	}
-	defer configFile.Close()
-
-	newConfigBody, err := yaml.Marshal(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to marshal config into string : %s", err)
-	}
-
-	_, err = configFile.Write(newConfigBody)
-	if err != nil {
-		return fmt.Errorf("failed to write config file : %s", err)
-	}
-
-	return nil
-}
+// TODO - I don't know if we still want to keep this, it shouldn't be necessary
+// think it's better for the user to set all the values in the config
+//func (cfg *Config) SaveConfig() error {
+//	configFilePath := cfg.Path
+//
+//	configFile, err := os.Create(configFilePath)
+//	if err != nil {
+//		return fmt.Errorf("could not open config file : %s", err)
+//	}
+//	defer configFile.Close()
+//
+//	newConfigBody, err := yaml.Marshal(cfg)
+//	if err != nil {
+//		return fmt.Errorf("failed to marshal config into string : %s", err)
+//	}
+//
+//	_, err = configFile.Write(newConfigBody)
+//	if err != nil {
+//		return fmt.Errorf("failed to write config file : %s", err)
+//	}
+//
+//	return nil
+//}
 
 func (cfg *Config) SetDefaults() {
 	cfg.TimeZone = "UTC"
 
-	cfg.WhatsApp.SessionName = "coco_watg"
+	cfg.WhatsApp.SessionName = "coco-watg"
 	cfg.WhatsApp.LoginDatabase.Type = "sqlite3"
 	cfg.WhatsApp.LoginDatabase.URL = "file:coco_wawebstore.db?_foreign_keys=on"
 	cfg.WhatsApp.StickerMetadata.PackName = "WaTgBridge"
 	cfg.WhatsApp.StickerMetadata.AuthorName = "WaTgBridge"
 
+	cfg.Telegram.APIURL = gotgbot.DefaultAPIURL
 	cfg.Telegram.ConfirmationType = "emoji"
 }
