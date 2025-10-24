@@ -71,7 +71,19 @@ func PairSuccessHandler(event *events.PairSuccess) {
 	// save me into the database
 	_, found := database.FindCocoContact(event.ID, event.LID)
 	if !found {
-		database.CreateCocoContact(event.ID, event.LID, "You")
+		// make sure we don't exist with just one id
+		contactJid, foundJid := database.FindCocoContactSingleId(event.ID)
+		if foundJid {
+			database.CocoContactUpdateLid(contactJid.ID, event.LID)
+		} else {
+			contactLid, foundLid := database.FindCocoContactSingleId(event.LID)
+			if foundLid {
+				database.CocoContactUpdateLid(contactLid.ID, event.ID)
+			} else {
+				// nothing exists, we should create ourselves
+				database.CreateCocoContact(event.ID, event.LID, "You")
+			}
+		}
 	}
 }
 
@@ -244,7 +256,6 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 	}
 
 	var bridgedText string
-	// TODO I wanna clean this update. For note for myself, basically leave this as false so that PVT doesn't show, because we know it's a private chat
 	if v.Info.IsFromMe {
 		bridgedText += "🙊: <b>You [other device]</b>\n"
 	} else {
@@ -255,7 +266,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 	if v.Info.IsIncomingBroadcast() {
 		bridgedText += "📢: <b>(Broadcast)</b>\n"
 	} else if v.Info.IsGroup {
-		bridgedText += fmt.Sprintf("🧑: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
+		bridgedText += fmt.Sprintf("👫: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
 	} else if !cfg.WhatsApp.SkipChatDetails {
 		bridgedText += "🪪: <b>(PVT)</b>\n"
 	}
