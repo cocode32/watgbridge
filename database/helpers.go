@@ -261,21 +261,47 @@ type CocoContactInfo struct {
 }
 
 func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
-
 	var (
 		db           = state.State.Database
 		contactNames []CocoContact
 	)
 
 	for k, manualContactData := range contacts {
-		contactNames = append(contactNames, CocoContact{
-			Jid:          GetDatabaseJid(k),
-			Lid:          GetDatabaseJid(manualContactData.Lid),
-			Name:         manualContactData.FirstName,
-			PushName:     manualContactData.PushName,
-			BusinessName: manualContactData.BusinessName,
-			FullName:     manualContactData.FullName,
-		})
+		// find existing record if there
+		jidContact, found := FindCocoContactSingleId(k)
+		if !found {
+			lidContact, foundLid := FindCocoContactSingleId(manualContactData.Lid)
+			if !foundLid {
+				contactNames = append(contactNames, CocoContact{
+					Jid:          GetDatabaseJid(k),
+					Lid:          GetDatabaseJid(manualContactData.Lid),
+					Name:         manualContactData.FirstName,
+					PushName:     manualContactData.PushName,
+					BusinessName: manualContactData.BusinessName,
+					FullName:     manualContactData.FullName,
+				})
+			} else {
+				contactNames = append(contactNames, CocoContact{
+					ID:           lidContact.ID,
+					Jid:          GetDatabaseJid(k),
+					Lid:          GetDatabaseJid(manualContactData.Lid),
+					Name:         manualContactData.FirstName,
+					PushName:     manualContactData.PushName,
+					BusinessName: manualContactData.BusinessName,
+					FullName:     manualContactData.FullName,
+				})
+			}
+		} else {
+			contactNames = append(contactNames, CocoContact{
+				ID:           jidContact.ID,
+				Jid:          GetDatabaseJid(k),
+				Lid:          GetDatabaseJid(manualContactData.Lid),
+				Name:         manualContactData.FirstName,
+				PushName:     manualContactData.PushName,
+				BusinessName: manualContactData.BusinessName,
+				FullName:     manualContactData.FullName,
+			})
+		}
 	}
 
 	res := db.Save(&contactNames)

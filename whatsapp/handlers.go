@@ -139,18 +139,17 @@ func HandleWhatsAppMessage(event *events.Message) {
 }
 
 func HistorySyncHandler(event *events.HistorySync) {
-	//if state.State.WhatsAppClient.IsConnected() {
-	//	InitialSyncContactsHandler()
-	//}
-
 	// cool, we have chatted to people in the past, let's get already known lids and jids
 	if event.Data.SyncType != nil && (*event.Data.SyncType == waHistorySync.HistorySync_PUSH_NAME || *event.Data.SyncType == waHistorySync.HistorySync_RECENT || *event.Data.SyncType == waHistorySync.HistorySync_INITIAL_BOOTSTRAP) {
 		for _, mapping := range event.Data.PhoneNumberToLidMappings {
 			jid, _ := waTypes.ParseJID(*mapping.PnJID)
 			lid, _ := waTypes.ParseJID(*mapping.LidJID)
-			_, found := database.FindCocoContact(jid, lid)
-			if !found {
-				database.CreateCocoContact(jid, lid, "")
+			_, foundJid := database.FindCocoContactSingleId(jid)
+			if !foundJid {
+				_, foundLid := database.FindCocoContactSingleId(lid)
+				if !foundLid {
+					database.CreateCocoContact(jid, lid, "HistorySyncHandler")
+				}
 			}
 		}
 	}
@@ -1955,7 +1954,7 @@ func InitialSyncContactsHandler() {
 	logger := state.State.Logger
 
 	logger.Info(
-		"Starting syncing contacts... may take some time",
+		"Starting INITIAL sync of contacts... may take some time",
 	)
 
 	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
