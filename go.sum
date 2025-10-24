@@ -8,6 +8,10 @@ github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.33 h1:uyVD1QSS7ftd/DE2x5OFRx4PYyhq
 github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.33/go.mod h1:BSzsfjlE0wakLw2/U1FtO8rdVt+Z+4VyoGo/YcGD9QQ=
 github.com/av-elier/go-decimal-to-rational v0.0.0-20250603203441-f39a07f43ff3 h1:/YU0DeJ1G3zn93Yk2ziNZdG7Q0w9KNfw/JmPNJ4IVDI=
 github.com/av-elier/go-decimal-to-rational v0.0.0-20250603203441-f39a07f43ff3/go.mod h1:GnsWLsBM/Ru0k9GBU9jUFqf35G9c5/EPQfvoV4IPPzA=
+github.com/cocode32/tg-sticker-converter v0.0.0-20251024100513-9b959bb54611 h1:3Zl49BYN2fuD3Dc7FJSsJJ2+y8zmJv1cdx1Ttm20ubQ=
+github.com/cocode32/tg-sticker-converter v0.0.0-20251024100513-9b959bb54611/go.mod h1:RFx58GHvEl/IaRVoD4BcLIHSUZgcFhohSa6oh2DRldI=
+github.com/cocode32/watg-webp v0.0.0-20251024095350-afd422edf83c h1:SvbHrjS7SQ8M4/ntjX1As8iUx+5kelgiNth2zGqFSGg=
+github.com/cocode32/watg-webp v0.0.0-20251024095350-afd422edf83c/go.mod h1:3CTBw2eUBF/yDjqZu8VfMpd1m4wOPNvcvCXWg7oGDss=
 github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -79,10 +83,6 @@ github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UV
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/watgbridge/tgsconverter v0.0.0-20240710075117-d1c05581b842 h1:wnf7BjgRzAn1Nrt8s/JSAIBY4piCqjT2b68w2tKixrU=
-github.com/watgbridge/tgsconverter v0.0.0-20240710075117-d1c05581b842/go.mod h1:TiKtQQnS7kqOXMl372GzDy+8ABveJy9w9JD88NQaR14=
-github.com/watgbridge/webp v0.0.0-20240709143015-99fb5316f772 h1:pXnh8U4/14QVM4LB/DJVOGHoWpkrBke+gE+qcOaLxMQ=
-github.com/watgbridge/webp v0.0.0-20240709143015-99fb5316f772/go.mod h1:TqnmhmYJVPcl/RYFCJ6xf6KJfJQTqVwXpGTvzPVhqF0=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 go.mau.fi/libsignal v0.2.0 h1:oRXj3OHhEJq51BFEM8/50UZblmWiTYH93hsNTPcbk90=
 go.mau.fi/libsignal v0.2.0/go.mod h1:tvjoDsMejgT38CXTXwqaYu8itBiY8O2Mb6biWvZBb9k=
