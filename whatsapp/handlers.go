@@ -1434,7 +1434,7 @@ func RevokedMessageEventHandler(v *events.Message) {
 		waChatId    = v.Info.Chat.String()
 	)
 
-	if !cfg.WhatsApp.SendRevokedMessageUpdates {
+	if cfg.WhatsApp.SkipRevokedMessage {
 		return
 	}
 
@@ -1442,7 +1442,7 @@ func RevokedMessageEventHandler(v *events.Message) {
 
 	var deleterName string
 	if v.Info.IsFromMe {
-		deleterName = "you"
+		deleterName = "You"
 	} else {
 		deleterName = utils.WaGetContactName(deleter)
 	}

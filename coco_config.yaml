@@ -124,8 +124,8 @@ whatsapp:
   # typically fine to leave this as true, but you can set it to false to check out what the messages look like
   skip_chat_details: true
 
-  # TODO need to confirm this
-  send_revoked_message_updates: true
+  # If you don't want to know if the person deleted/revoked the message on whatsapp, set this to true
+  skip_revoked_message: false
 
   # by default, you won't get messages you send to the person on whatsapp in telegram
   # recommendation is to keep this set to true, so that you can have all messages in telegram

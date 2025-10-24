@@ -63,7 +63,7 @@ type Config struct {
 		SkipProfilePictureUpdates      bool     `yaml:"skip_profile_picture_updates"`
 		SkipGroupSettingsUpdates       bool     `yaml:"skip_group_settings_updates"`
 		SkipChatDetails                bool     `yaml:"skip_chat_details"`
-		SendRevokedMessageUpdates      bool     `yaml:"send_revoked_message_updates"`
+		SkipRevokedMessage             bool     `yaml:"skip_revoked_message"`
 		WhatsmeowDebugMode             bool     `yaml:"whatsmeow_debug_mode"`
 		SendMyMessagesFromOtherDevices bool     `yaml:"send_my_messages_from_other_devices"`
 		CreateThreadForInfoUpdates     bool     `yaml:"create_thread_for_info_updates"`
