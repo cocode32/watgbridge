@@ -108,6 +108,8 @@ whatsapp:
   skip_stickers: false
   skip_contacts: false
   skip_locations: false
+  # If you don't want to know if the person deleted/revoked the message on whatsapp, set this to true
+  skip_revoked_message: false
 
   # The default from this example is to have this value as true
   # when this value is true, it will create a new topic in telegram called "Info Updates"
@@ -123,9 +125,6 @@ whatsapp:
   # This will basically give you some extra information on the message that you receive, if it's from a person or a group
   # typically fine to leave this as true, but you can set it to false to check out what the messages look like
   skip_chat_details: true
-
-  # If you don't want to know if the person deleted/revoked the message on whatsapp, set this to true
-  skip_revoked_message: false
 
   # by default, you won't get messages you send to the person on whatsapp in telegram
   # recommendation is to keep this set to true, so that you can have all messages in telegram
