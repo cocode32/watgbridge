@@ -255,7 +255,12 @@ func ChatThreadGetAllPairs() ([]CocoChatThread, error) {
 //	return res.Error
 //}
 
-func ContactNameBulkAddOrUpdate(contacts map[types.JID]types.ContactInfo) error {
+type CocoContactInfo struct {
+	*types.ContactInfo
+	Lid types.JID
+}
+
+func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 
 	var (
 		db           = state.State.Database
