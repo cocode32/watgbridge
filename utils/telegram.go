@@ -61,7 +61,6 @@ func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, comm
 func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (int64, bool, error) {
 	jid, _ := waTypes.ParseJID(waChatId)
 	cocoChatThread, threadFound := database.GetChatThread(jid)
-	fmt.Printf("cocoChatThread: %v, jid: %v\n", cocoChatThread.ThreadId, jid)
 
 	if !threadFound {
 		tgBot := state.State.TelegramBot
