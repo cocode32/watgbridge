@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"watgbridge/state"
 
 	"go.mau.fi/whatsmeow/types"
@@ -242,29 +243,33 @@ type CocoContactInfo struct {
 
 func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 	var (
-		db           = state.State.Database
-		contactNames []CocoContact
+		db             = state.State.Database
+		logger         = state.State.Logger
+		newContacts    []CocoContact
+		updateContacts []CocoContact
 	)
 
 	for k, manualContactData := range contacts {
-		// find existing record if there
+		jid := GetDatabaseJid(k)
+		lid := GetDatabaseJid(manualContactData.Lid)
+
 		jidContact, found := FindCocoContactSingleId(k)
 		if !found {
 			lidContact, foundLid := FindCocoContactSingleId(manualContactData.Lid)
 			if !foundLid {
-				contactNames = append(contactNames, CocoContact{
-					Jid:          GetDatabaseJid(k),
-					Lid:          GetDatabaseJid(manualContactData.Lid),
+				newContacts = append(newContacts, CocoContact{
+					Jid:          jid,
+					Lid:          lid,
 					Name:         manualContactData.FirstName,
 					PushName:     manualContactData.PushName,
 					BusinessName: manualContactData.BusinessName,
 					FullName:     manualContactData.FullName,
 				})
 			} else {
-				contactNames = append(contactNames, CocoContact{
+				updateContacts = append(updateContacts, CocoContact{
 					ID:           lidContact.ID,
-					Jid:          GetDatabaseJid(k),
-					Lid:          GetDatabaseJid(manualContactData.Lid),
+					Jid:          jid,
+					Lid:          lid,
 					Name:         manualContactData.FirstName,
 					PushName:     manualContactData.PushName,
 					BusinessName: manualContactData.BusinessName,
@@ -272,10 +277,10 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 				})
 			}
 		} else {
-			contactNames = append(contactNames, CocoContact{
+			updateContacts = append(updateContacts, CocoContact{
 				ID:           jidContact.ID,
-				Jid:          GetDatabaseJid(k),
-				Lid:          GetDatabaseJid(manualContactData.Lid),
+				Jid:          jid,
+				Lid:          lid,
 				Name:         manualContactData.FirstName,
 				PushName:     manualContactData.PushName,
 				BusinessName: manualContactData.BusinessName,
@@ -284,9 +289,28 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 		}
 	}
 
-	res := db.Save(&contactNames)
+	var finalError error
+	// Create new ones
+	if len(newContacts) > 0 {
+		newError := db.Create(&newContacts).Error
+		if newError != nil {
+			logger.Error(fmt.Sprintf("Error creating new contacts: %v", newError))
+		}
+		finalError = errors.Join(newError, finalError)
+	}
 
-	return res.Error
+	// Update existing ones
+	if len(updateContacts) > 0 {
+		for _, c := range updateContacts {
+			err := db.Save(&c).Error
+			finalError = errors.Join(err, finalError)
+			if err != nil {
+				logger.Error(fmt.Sprintf("Error updating contacts: %v", err))
+			}
+		}
+	}
+
+	return finalError
 }
 
 func ContactNameGet(waUserId types.JID) (string, string, string, string, string, error) {
