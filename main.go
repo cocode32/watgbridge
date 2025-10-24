@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"time"
-
 	"watgbridge/database"
 	"watgbridge/modules"
 	"watgbridge/state"
@@ -19,7 +18,7 @@ import (
 )
 
 func main() {
-	// Load configuration file
+	// Load configuration file and configs
 	cfg := state.State.Config
 	cfg.SetDefaults()
 
@@ -59,6 +58,39 @@ func main() {
 		zap.Bool("development_mode", cfg.DebugMode),
 	)
 	logger.Sync()
+
+	// Setup telegram bot
+	err = telegram.NewTelegramClient()
+	if err != nil {
+		logger.Fatal("failed to initialize telegram client",
+			zap.Error(err),
+		)
+		panic(err)
+	}
+	telegram.AddTelegramHandlers()
+	modules.LoadModuleHandlers()
+	fmt.Printf("Check value %v", cfg.Telegram.RemoveBotCommands)
+	if cfg.Telegram.RemoveBotCommands {
+		err = utils.TgRegisterBotCommands(state.State.TelegramBot)
+		if err != nil {
+			logger.Error("failed to set my commands to empty",
+				zap.Error(err),
+			)
+		}
+	} else {
+		err = utils.TgRegisterBotCommands(state.State.TelegramBot, state.State.TelegramCommands...)
+		if err != nil {
+			logger.Error("failed to set my commands",
+				zap.Error(err),
+			)
+		}
+	}
+
+	logger.Sync()
+
+	if !cfg.Telegram.SkipStartupMessage {
+		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully started Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
+	}
 
 	// Create local location for time
 	if cfg.TimeZone == "" {
@@ -124,13 +156,6 @@ func main() {
 		panic("unable to migrate database")
 	}
 
-	err = telegram.NewTelegramClient()
-	if err != nil {
-		logger.Fatal("failed to initialize telegram client",
-			zap.Error(err),
-		)
-		panic(err)
-	}
 	err = whatsapp.NewWhatsAppClient()
 	if err != nil {
 		panic(err)
@@ -149,30 +174,7 @@ func main() {
 	// })
 
 	state.State.WhatsAppClient.AddEventHandler(whatsapp.WhatsAppEventHandler)
-	telegram.AddTelegramHandlers()
-	modules.LoadModuleHandlers()
 
-	if cfg.Telegram.RemoveBotCommands {
-		err = utils.TgRegisterBotCommands(state.State.TelegramBot)
-		if err != nil {
-			logger.Error("failed to set my commands to empty",
-				zap.Error(err),
-			)
-		}
-	} else {
-		err = utils.TgRegisterBotCommands(state.State.TelegramBot, state.State.TelegramCommands...)
-		if err != nil {
-			logger.Error("failed to set my commands",
-				zap.Error(err),
-			)
-		}
-	}
-
-	logger.Sync()
-
-	if !cfg.Telegram.SkipStartupMessage {
-		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully started Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
-	}
-
+	// keep the application running
 	state.State.TelegramUpdater.Idle()
 }

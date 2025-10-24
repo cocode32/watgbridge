@@ -34,10 +34,21 @@ const (
 )
 
 func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
-	_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
+	hasCommands := len(commands) > 0
+
+	fmt.Printf("Does have commands? %v\n", hasCommands)
+	if hasCommands {
+		_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
+			LanguageCode: "en",
+			// limit these commands to only show for you
+			// TODO need to get your actual ID
+			Scope: gotgbot.BotCommandScopeChat{ChatId: DownloadSizeLimit},
+		})
+		return err
+	}
+	_, err := b.DeleteMyCommands(&gotgbot.DeleteMyCommandsOpts{
 		LanguageCode: "en",
-		// TODO - this needs to be scoped otherwise other people can just get your information
-		Scope: gotgbot.BotCommandScopeDefault{},
+		Scope:        gotgbot.BotCommandScopeDefault{},
 	})
 	return err
 }

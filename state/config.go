@@ -150,9 +150,9 @@ func (cfg *Config) SaveConfig() error {
 func (cfg *Config) SetDefaults() {
 	cfg.TimeZone = "UTC"
 
-	cfg.WhatsApp.SessionName = "watgbridge"
+	cfg.WhatsApp.SessionName = "coco_watg"
 	cfg.WhatsApp.LoginDatabase.Type = "sqlite3"
-	cfg.WhatsApp.LoginDatabase.URL = "file:wawebstore.db?foreign_keys=on"
+	cfg.WhatsApp.LoginDatabase.URL = "file:coco_wawebstore.db?_foreign_keys=on"
 	cfg.WhatsApp.StickerMetadata.PackName = "WaTgBridge"
 	cfg.WhatsApp.StickerMetadata.AuthorName = "WaTgBridge"
 
