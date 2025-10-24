@@ -1,66 +1,72 @@
+#file: noinspection SpellCheckingInspection
+debug_mode: false
+
+# check here for your format
+# https://go.dev/src/time/zoneinfo_abbrs_windows.go
 time_zone: Africa/Johannesburg
-# my preferred time format
-## Date Time infomation
+# go date time format is specific
+## Date Time information
 ### https://gosamples.dev/date-time-format-cheatsheet/
 time_format: Mon, 2006-01-02 @ 15:04:05
-git_executable: /usr/bin/git
-go_executable: /usr/bin/go
+
+# use which ffmpeg to get this path
+# if you set skip_video_stickers to true, then this is not needed
 ffmpeg_executable: /usr/bin/ffmpeg
-debug_mode: false
-use_github_binaries: false
-architecture: ""
+
 telegram:
-    bot_token:
-    api_url: http://localhost:4887
+    bot_token: "GET_YOUR_TOKEN_FOR_BOT_FATHER"
+    self_hosted_api: false
+    api_url: "" # example -- only use this if the self_hosted_api is true http://localhost:4887
+
+    # These IDS are your Telegram ID. Use a bot like @myidbot to get your ID
     sudo_users_id:
         - XYYYXXXXXXXXX
+    # This is the owner that the bot will talk to -- sending you the QR code when it starts
     owner_id: XYYYXXXXXXXXX
+    # Add @myidbot to your group and use /getgroupid to get this id. Make sure that it starts with -1
     target_chat_id: -100ZZZZZZAAAAAAAA
-    self_hosted_api: true
+
     skip_video_stickers: false
+    # this will prevent you from interacting with the bot on telegram. This should be set to true if you want to delete the commands (i.e. free the bot for something else)
     skip_setting_commands: false
+    # send "online" to whatsapp when you are on telegram?
     send_my_presence: false
+    # work in progress
     send_my_read_receipts: true
     silent_confirmation: true
     confirmation_type: emoji
-    emoji_confirmation: null
     skip_startup_message: true
     spoiler_as_viewonce: true
     reactions: true
+
 whatsapp:
-    login_database:
-        type: sqlite3
-        url: file:wawebstore.db?_foreign_keys=on
-    sticker_metadata:
-        pack_name: AkitaInu
-        author_name: AkitaInu
-    session_name: AkitaInuBrowser
-    tag_all_allowed_groups: []
-    ignore_chats: []
-    status_ignored_chats:
-        - "27XXXXXXXXX"
-    skip_documents: false
-    skip_images: false
-    skip_gifs: false
-    skip_videos: false
-    skip_voice_notes: false
-    skip_audios: false
-    skip_status: false
-    skip_stickers: false
-    skip_contacts: false
-    skip_locations: false
-    skip_profile_picture_updates: false
-    skip_group_settings_updates: false
-    skip_chat_details: false
-    send_revoked_message_updates: true
-    whatsmeow_debug_mode: false
-    send_my_messages_from_other_devices: false
-    create_thread_for_info_updates: true
+  login_database:
+    type: sqlite3
+    url: file:personal_coco_wawebstore.db?_foreign_keys=on
+  sticker_metadata:
+    pack_name: AkitaInuBeta
+    author_name: AkitaInuBeta
+  session_name: AkitaInu-BetaNode
+  tag_all_allowed_groups: [ ]
+  ignore_chats: [ ]
+  status_ignored_chats: [ ]
+  skip_documents: false
+  skip_images: false
+  skip_gifs: false
+  skip_videos: false
+  skip_voice_notes: false
+  skip_audios: false
+  skip_status: false
+  skip_stickers: false
+  skip_contacts: false
+  skip_locations: false
+  skip_profile_picture_updates: false
+  skip_group_settings_updates: false
+  skip_chat_details: false
+  send_revoked_message_updates: true
+  whatsmeow_debug_mode: false
+  send_my_messages_from_other_devices: true
+  create_thread_for_info_updates: true
 database:
-    dbname: 
-    host: localhost
-    password: 
-    port:
-    time_zone: Africa/Johannesburg
-    type: 
-    user: 
+  type: sqlite
+  path: ./personal_coco_watgbridge.sqlite.db
