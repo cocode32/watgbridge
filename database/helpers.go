@@ -381,10 +381,13 @@ func FindCocoContactById(id int32) (CocoContact, bool) {
 func FindCocoContact(jid string, lid string) (CocoContact, bool) {
 	db := state.State.Database
 
+	jidParse, _ := types.ParseJID(jid)
+	lidParse, _ := types.ParseJID(lid)
+
 	var userContact CocoContact
 	var result = db.Where(&CocoContact{
-		Jid: jid,
-		Lid: lid,
+		Jid: jidParse.ToNonAD().String(),
+		Lid: lidParse.ToNonAD().String(),
 	}).First(&userContact)
 
 	return userContact, result.Error == nil
@@ -393,9 +396,12 @@ func FindCocoContact(jid string, lid string) (CocoContact, bool) {
 func CreateCocoContact(jid string, lid string) (CocoContact, bool) {
 	db := state.State.Database
 
+	jidParse, _ := types.ParseJID(jid)
+	lidParse, _ := types.ParseJID(lid)
+
 	userContact := CocoContact{
-		Jid: jid,
-		Lid: lid,
+		Jid: jidParse.ToNonAD().String(),
+		Lid: lidParse.ToNonAD().String(),
 	}
 	result := db.Create(&userContact)
 
@@ -420,8 +426,10 @@ func FindCocoContactSingleId(idFromWhatsmeow string) (CocoContact, bool, bool, b
 func CreateCocoContactJid(id string) (CocoContact, bool) {
 	db := state.State.Database
 
+	jid, _ := types.ParseJID(id)
+
 	userContact := CocoContact{
-		Jid: id,
+		Jid: jid.ToNonAD().String(),
 	}
 	result := db.Create(&userContact)
 
@@ -431,8 +439,10 @@ func CreateCocoContactJid(id string) (CocoContact, bool) {
 func CreateCocoContactLid(id string) (CocoContact, bool) {
 	db := state.State.Database
 
+	lid, _ := types.ParseJID(id)
+
 	userContact := CocoContact{
-		Lid: id,
+		Lid: lid.ToNonAD().String(),
 	}
 	result := db.Create(&userContact)
 
