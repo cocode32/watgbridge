@@ -28,6 +28,9 @@ func WhatsAppEventHandler(evt interface{}) {
 
 	switch whatsAppEvent := evt.(type) {
 
+	case *events.PairSuccess:
+		PairSuccessHandler(whatsAppEvent)
+
 	case *events.Connected:
 		ConnectedHandler()
 
@@ -59,6 +62,14 @@ func WhatsAppEventHandler(evt interface{}) {
 		CallOfferEventHandler(whatsAppEvent)
 	}
 
+}
+
+func PairSuccessHandler(event *events.PairSuccess) {
+	// save me into the database
+	_, found := database.FindCocoContact(event.ID, event.LID)
+	if !found {
+		database.CreateCocoContact(event.ID, event.LID, "You")
+	}
 }
 
 func ConnectedHandler() {
@@ -125,9 +136,9 @@ func HistorySyncHandler(event *events.HistorySync) {
 		for _, mapping := range event.Data.PhoneNumberToLidMappings {
 			jid, _ := waTypes.ParseJID(*mapping.PnJID)
 			lid, _ := waTypes.ParseJID(*mapping.LidJID)
-			_, found := database.FindCocoContact(jid.ToNonAD().String(), lid.ToNonAD().String())
+			_, found := database.FindCocoContact(jid, lid)
 			if !found {
-				database.CreateCocoContact(jid.ToNonAD().String(), lid.ToNonAD().String())
+				database.CreateCocoContact(jid, lid, "")
 			}
 		}
 	}
@@ -1308,7 +1319,7 @@ func PushNameEventHandler(v *events.PushName) {
 		zap.String("new_push_name", v.NewPushName),
 	)
 
-	database.CocoContactUpdatePushName(v.Message.Sender.String(), v.Message.SenderAlt.String(), v.NewPushName)
+	database.CocoContactUpdatePushName(v.Message.Sender, v.Message.SenderAlt, v.NewPushName)
 }
 
 func UserAboutEventHandler(v *events.UserAbout) {
@@ -1361,7 +1372,7 @@ func UserAboutEventHandler(v *events.UserAbout) {
 		return
 	}
 
-	_, threadFound := database.GetChatThread(v.JID.ToNonAD().String())
+	_, threadFound := database.GetChatThread(v.JID)
 	if !threadFound {
 		logger.Warn(
 			"no thread found for a WhatsApp chat (handling UserAbout event)",
@@ -1514,7 +1525,7 @@ func PictureEventHandler(v *events.Picture) {
 	}
 
 	// TODO I still need to fix the lid thing here, but for right now, at least I can get everyone's update posted
-	_, threadFound := database.GetChatThread(v.JID.ToNonAD().String())
+	_, threadFound := database.GetChatThread(v.JID)
 	if !threadFound {
 		logger.Warn(
 			"no thread found for a WhatsApp chat (handling Picture event)",
@@ -1662,7 +1673,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 		}
 	}
 
-	cocoChatThread, threadFound := database.GetChatThread(v.JID.ToNonAD().String())
+	cocoChatThread, threadFound := database.GetChatThread(v.JID)
 	if !threadFound {
 		logger.Warn(
 			"no thread found for a WhatsApp chat (handling GroupInfo event)",

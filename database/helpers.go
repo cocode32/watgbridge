@@ -312,14 +312,14 @@ func ContactGetAll() (map[int]CocoContact, error) {
 	return results, res.Error
 }
 
-func CocoContactUpdatePushName(chatId types.JID, senderAltId types.JID, pushName string) error {
+func CocoContactUpdatePushName(senderId types.JID, senderAltId types.JID, pushName string) error {
 	if pushName == "" {
 		return nil
 	}
 
 	db := state.State.Database
 
-	contact, found := FindCocoContact(chatId, senderAltId)
+	contact, found := FindCocoContact(senderId, senderAltId)
 	if !found {
 		return nil
 	}
@@ -397,12 +397,18 @@ func FindCocoContact(jid types.JID, lid types.JID) (CocoContact, bool) {
 	return userContact, result.Error == nil
 }
 
-func CreateCocoContact(jid types.JID, lid types.JID) (CocoContact, bool) {
+func CreateCocoContact(jid types.JID, lid types.JID, name string) (CocoContact, bool) {
 	db := state.State.Database
 
+	var pushName = name
+	if pushName == "" {
+		pushName = jid.User
+	}
+
 	userContact := CocoContact{
-		Jid: GetDatabaseJid(jid),
-		Lid: GetDatabaseJid(lid),
+		Jid:      GetDatabaseJid(jid),
+		Lid:      GetDatabaseJid(lid),
+		PushName: name,
 	}
 	result := db.Create(&userContact)
 
