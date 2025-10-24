@@ -31,7 +31,7 @@ func Connect() (*gorm.DB, error) {
 	}
 
 	gormConfig := gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn),
+		Logger: logger.Default.LogMode(logger.Silent),
 	}
 
 	switch dbType {

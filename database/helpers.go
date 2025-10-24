@@ -196,7 +196,7 @@ func GetChatThread(waChatId types.JID) (CocoChatThread, bool) {
 
 	var result = db.Where(&CocoChatThread{
 		CocoContactId: cocoContact.ID,
-	}).Limit(1).Find(&chatThread)
+	}).First(&chatThread)
 
 	return chatThread, result.Error == nil
 }
@@ -409,7 +409,7 @@ func FindCocoContactById(id int32) (CocoContact, bool) {
 	var userContact CocoContact
 	var result = db.Where(&CocoContact{
 		ID: id,
-	}).Limit(1).Find(&userContact)
+	}).First(&userContact)
 
 	return userContact, result.Error == nil
 }
@@ -421,7 +421,7 @@ func FindCocoContact(jid types.JID, lid types.JID) (CocoContact, bool) {
 	var result = db.Where(&CocoContact{
 		Jid: GetDatabaseJid(jid),
 		Lid: GetDatabaseJid(lid),
-	}).Limit(1).Find(&userContact)
+	}).First(&userContact)
 
 	return userContact, result.Error == nil
 }
