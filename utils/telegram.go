@@ -36,12 +36,11 @@ const (
 func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
 	hasCommands := len(commands) > 0
 
-	fmt.Printf("Does have commands? %v\n", hasCommands)
 	if hasCommands {
 		_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
 			LanguageCode: "en",
 			// limit these commands to only show for you
-			// TODO need to get your actual ID
+			// TODO need to get your actual ID - once I can confirm that this doesn't show for me
 			Scope: gotgbot.BotCommandScopeChat{ChatId: DownloadSizeLimit},
 		})
 		return err

@@ -69,11 +69,11 @@ func main() {
 	}
 	telegram.AddTelegramHandlers()
 	modules.LoadModuleHandlers()
-	fmt.Printf("Check value %v", cfg.Telegram.RemoveBotCommands)
+	
 	if cfg.Telegram.RemoveBotCommands {
 		err = utils.TgRegisterBotCommands(state.State.TelegramBot)
 		if err != nil {
-			logger.Error("failed to set my commands to empty",
+			logger.Error("failed to set remove commands",
 				zap.Error(err),
 			)
 		}
