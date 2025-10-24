@@ -459,18 +459,14 @@ func UnlinkThreadHandler(b *gotgbot.Bot, c *ext.Context) error {
 		return err
 	}
 
-	err := utils.TgReplyWithErrorByContext(b, c, "This functionality has not been implemented. See code", errors.New("idk man"))
-	return err
+	err := database.ChatThreadDropPairByTg(tgThreadId)
+	if err != nil {
+		err = utils.TgReplyWithErrorByContext(b, c, "Failed to delete the thread chat pairing", err)
+		return err
+	}
 
-	// TODO maybe come back to enable deletes
-	//err = database.ChatThreadDropPairByTg(tgChatId, tgThreadId)
-	//if err != nil {
-	//	err = utils.TgReplyWithErrorByContext(b, c, "Failed to delete the thread chat pairing", err)
-	//	return err
-	//}
-	//
-	//_, err = utils.TgReplyTextByContext(b, c, "Successfully unlinked", nil, false)
-	//return err
+	_, err = utils.TgReplyTextByContext(b, c, "Successfully unlinked", nil, false)
+	return err
 }
 
 func handleBlockUnblockUser(b *gotgbot.Bot, c *ext.Context, action events.BlocklistChangeAction) error {

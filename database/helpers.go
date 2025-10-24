@@ -200,14 +200,15 @@ func GetChatThread(waChatId types.JID) (CocoChatThread, bool) {
 	return chatThread, result.Error == nil
 }
 
-// TODO maybe not needed - confirm
-//func ChatThreadDropPairByTg(tgChatId, tgThreadId int64) error {
-//	db := state.State.Database
-//
-//	res := db.Where("tg_chat_id = ? AND tg_thread_id = ?", tgChatId, tgThreadId).Delete(&ChatThreadPair{})
-//
-//	return res.Error
-//}
+func ChatThreadDropPairByTg(tgThreadId int64) error {
+	db := state.State.Database
+
+	res := db.Where(&CocoChatThread{
+		ThreadId: tgThreadId,
+	}).Delete(&CocoChatThread{})
+
+	return res.Error
+}
 
 func ChatThreadGetWaFromTg(tgThreadId int64) (CocoContact, bool) {
 	db := state.State.Database
@@ -233,32 +234,6 @@ func ChatThreadGetAllPairs() ([]CocoChatThread, error) {
 
 	return chatPairs, res.Error
 }
-
-// TODO not referenced it seems
-//func ChatThreadDropAllPairs() error {
-//
-//	db := state.State.Database
-//	res := db.Where("1 = 1").Delete(&ChatThreadPair{})
-//
-//	return res.Error
-//}
-
-// TODO not used?
-//func ContactNameAddNew(waUserId, firstName, fullName, pushName, businessName string) error {
-//	db := state.State.Database
-//
-//	contact, found, _, _ := FindCocoContactSingleId(waUserId)
-//	if !found {
-//		panic("to be honest, if we didn't find or create the contact before, now it's all fucking broken")
-//	}
-//
-//	contact.Name = firstName
-//	contact.FullName = fullName
-//	contact.PushName = pushName
-//	contact.BusinessName = businessName
-//	var res = db.Save(&contact)
-//	return res.Error
-//}
 
 type CocoContactInfo struct {
 	*types.ContactInfo
