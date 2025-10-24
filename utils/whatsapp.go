@@ -131,13 +131,13 @@ func WaGetContactName(waId types.JID) string {
 			if err == nil && contact.Found {
 				name = firstNonEmpty(contact.FullName, contact.FirstName, contact.PushName, contact.BusinessName)
 				if name != "" {
-					name += " (" + database.GetDatabaseJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+					name += " (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
 				}
 			}
 		}
 
 		if name == "" {
-			name = "User Unknown (" + database.GetDatabaseJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+			name = "User Unknown (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
 		}
 
 		return name
@@ -146,11 +146,11 @@ func WaGetContactName(waId types.JID) string {
 
 	name = firstNonEmpty(cocoContact.FullName, cocoContact.Name, cocoContact.PushName, cocoContact.BusinessName)
 	if name != "" {
-		name += " (" + database.GetDatabaseJidAsPhoneNumber(cocoContact.Jid) + ")"
+		name += " (" + database.GetStringJidAsPhoneNumber(cocoContact.Jid) + ")"
 	}
 
 	if name == "" {
-		name = "User Not Found (" + database.GetDatabaseJidAsPhoneNumber(cocoContact.Jid) + ")"
+		name = "User Not Found (" + database.GetStringJidAsPhoneNumber(cocoContact.Jid) + ")"
 	}
 
 	return name

@@ -316,7 +316,7 @@ func ContactNameGet(waUserId types.JID) (string, string, string, string, string,
 		return "", "", "", "", "", errors.New("contact not found")
 	}
 
-	return GetDatabaseJidAsPhoneNumber(contact.Jid), contact.Name, contact.FullName, contact.PushName, contact.BusinessName, nil
+	return GetStringJidAsPhoneNumber(contact.Jid), contact.Name, contact.FullName, contact.PushName, contact.BusinessName, nil
 }
 
 func ContactGetAll() (map[int]CocoContact, error) {
@@ -538,7 +538,7 @@ func GetDatabaseJid(j types.JID) string {
 	return j.ToNonAD().String()
 }
 
-func GetDatabaseJidAsPhoneNumber(j string) string {
+func GetStringJidAsPhoneNumber(j string) string {
 	jid, _ := types.ParseJID(j)
 	if jid.Server == "lid" {
 		return "Unknown Number from WhatsApp"
