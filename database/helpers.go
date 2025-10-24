@@ -115,7 +115,7 @@ func MsgIdDropAllPairs() error {
 	return res.Error
 }
 
-func AddNewChatThread(waChatId string, tgThreadId int64) error {
+func AddNewChatThread(waChatId types.JID, tgThreadId int64) error {
 	db := state.State.Database
 
 	cocoChatThread, found := GetChatThread(waChatId)
@@ -125,12 +125,15 @@ func AddNewChatThread(waChatId string, tgThreadId int64) error {
 		return res.Error
 	}
 
-	cocoContact, found, isJid, isLid := FindCocoContactSingleId(waChatId)
-	if isJid {
-		cocoContact, _ = CreateCocoContactJid(waChatId)
-	}
-	if isLid {
-		cocoContact, _ = CreateCocoContactLid(waChatId)
+	cocoContact, found := FindCocoContactSingleId(waChatId)
+	if !found {
+		// unknown contact, just create one to make the thread
+		_, lid := GetJidOrLid(waChatId)
+		if lid == "" {
+			cocoContact, _ = CreateCocoContactJid(waChatId)
+		} else {
+			cocoContact, _ = CreateCocoContactLid(waChatId)
+		}
 	}
 
 	var res = db.Create(&CocoChatThread{
@@ -140,7 +143,7 @@ func AddNewChatThread(waChatId string, tgThreadId int64) error {
 	return res.Error
 }
 
-func AddNewChatThreadWithPush(waChatId string, tgThreadId int64, pushName string) error {
+func AddNewChatThreadWithPush(waChatId types.JID, tgThreadId int64, pushName string) error {
 	db := state.State.Database
 
 	var chatThread CocoChatThread
@@ -155,26 +158,31 @@ func AddNewChatThreadWithPush(waChatId string, tgThreadId int64, pushName string
 		return errors.Join(threadRes.Error, contactRes.Error)
 	}
 
-	cocoContact, found, isJid, isLid := FindCocoContactSingleId(waChatId)
-	if isJid {
-		cocoContact, _ = CreateCocoContactJid(waChatId)
-	}
-	if isLid {
-		cocoContact, _ = CreateCocoContactLid(waChatId)
+	cocoContact, found = FindCocoContactSingleId(waChatId)
+	if !found {
+		// unknown contact, just create one to make the thread
+		_, lid := GetJidOrLid(waChatId)
+		if lid == "" {
+			cocoContact, _ = CreateCocoContactJid(waChatId)
+		} else {
+			cocoContact, _ = CreateCocoContactLid(waChatId)
+		}
+		cocoContact.PushName = pushName
 	}
 
 	var res = db.Create(&CocoChatThread{
 		CocoContactId: cocoContact.ID,
 		ThreadId:      tgThreadId,
 	})
-	return res.Error
+	var contactRes = db.Save(&cocoContact)
+	return errors.Join(res.Error, contactRes.Error)
 }
 
-func GetChatThread(waChatId string) (CocoChatThread, bool) {
+func GetChatThread(waChatId types.JID) (CocoChatThread, bool) {
 	db := state.State.Database
 
 	var chatThread CocoChatThread
-	cocoContact, found, _, _ := FindCocoContactSingleId(waChatId)
+	cocoContact, found := FindCocoContactSingleId(waChatId)
 
 	if !found {
 		return chatThread, false
@@ -230,21 +238,22 @@ func ChatThreadGetAllPairs() ([]CocoChatThread, error) {
 //	return res.Error
 //}
 
-func ContactNameAddNew(waUserId, firstName, fullName, pushName, businessName string) error {
-	db := state.State.Database
-
-	contact, found, _, _ := FindCocoContactSingleId(waUserId)
-	if !found {
-		panic("to be honest, if we didn't find or create the contact before, now it's all fucking broken")
-	}
-
-	contact.Name = firstName
-	contact.FullName = fullName
-	contact.PushName = pushName
-	contact.BusinessName = businessName
-	var res = db.Save(&contact)
-	return res.Error
-}
+// TODO not used?
+//func ContactNameAddNew(waUserId, firstName, fullName, pushName, businessName string) error {
+//	db := state.State.Database
+//
+//	contact, found, _, _ := FindCocoContactSingleId(waUserId)
+//	if !found {
+//		panic("to be honest, if we didn't find or create the contact before, now it's all fucking broken")
+//	}
+//
+//	contact.Name = firstName
+//	contact.FullName = fullName
+//	contact.PushName = pushName
+//	contact.BusinessName = businessName
+//	var res = db.Save(&contact)
+//	return res.Error
+//}
 
 func ContactNameBulkAddOrUpdate(contacts map[types.JID]types.ContactInfo) error {
 
@@ -254,7 +263,7 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]types.ContactInfo) error 
 	)
 
 	for k, manualContactData := range contacts {
-		jid, lid := GetJidOrLid(k.User)
+		jid, lid := GetJidOrLid(k)
 		if lid == "" {
 			contactNames = append(contactNames, CocoContact{
 				Jid:          jid,
@@ -280,8 +289,8 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]types.ContactInfo) error 
 	return res.Error
 }
 
-func ContactNameGet(waUserId string) (string, string, string, string, error) {
-	contact, found, _, _ := FindCocoContactSingleId(waUserId)
+func ContactNameGet(waUserId types.JID) (string, string, string, string, error) {
+	contact, found := FindCocoContactSingleId(waUserId)
 
 	if !found {
 		return "", "", "", "", errors.New("contact not found")
@@ -303,16 +312,14 @@ func ContactGetAll() (map[int]CocoContact, error) {
 	return results, res.Error
 }
 
-func CocoContactUpdatePushName(chatId string, senderAltId string, pushName string) error {
+func CocoContactUpdatePushName(chatId types.JID, senderAltId types.JID, pushName string) error {
 	if pushName == "" {
 		return nil
 	}
 
 	db := state.State.Database
 
-	jid, lid := GetJidLid(chatId, senderAltId)
-
-	contact, found := FindCocoContact(jid, lid)
+	contact, found := FindCocoContact(chatId, senderAltId)
 	if !found {
 		return nil
 	}
@@ -378,71 +385,61 @@ func FindCocoContactById(id int32) (CocoContact, bool) {
 	return userContact, result.Error == nil
 }
 
-func FindCocoContact(jid string, lid string) (CocoContact, bool) {
+func FindCocoContact(jid types.JID, lid types.JID) (CocoContact, bool) {
 	db := state.State.Database
-
-	jidParse, _ := types.ParseJID(jid)
-	lidParse, _ := types.ParseJID(lid)
 
 	var userContact CocoContact
 	var result = db.Where(&CocoContact{
-		Jid: jidParse.ToNonAD().String(),
-		Lid: lidParse.ToNonAD().String(),
+		Jid: GetDatabaseJid(jid),
+		Lid: GetDatabaseJid(lid),
 	}).First(&userContact)
 
 	return userContact, result.Error == nil
 }
 
-func CreateCocoContact(jid string, lid string) (CocoContact, bool) {
+func CreateCocoContact(jid types.JID, lid types.JID) (CocoContact, bool) {
 	db := state.State.Database
 
-	jidParse, _ := types.ParseJID(jid)
-	lidParse, _ := types.ParseJID(lid)
-
 	userContact := CocoContact{
-		Jid: jidParse.ToNonAD().String(),
-		Lid: lidParse.ToNonAD().String(),
+		Jid: GetDatabaseJid(jid),
+		Lid: GetDatabaseJid(lid),
 	}
 	result := db.Create(&userContact)
 
 	return userContact, result.Error == nil
 }
 
-func FindCocoContactSingleId(idFromWhatsmeow string) (CocoContact, bool, bool, bool) {
+func FindCocoContactSingleId(idFromWhatsmeow types.JID) (CocoContact, bool) {
 	db := state.State.Database
-
-	_, lid := GetJidOrLid(idFromWhatsmeow)
 
 	var userContact CocoContact
 	var result = db.Where(&CocoContact{
-		Jid: idFromWhatsmeow,
+		Jid: GetDatabaseJid(idFromWhatsmeow),
 	}).Or(&CocoContact{
-		Lid: idFromWhatsmeow,
+		Lid: GetDatabaseJid(idFromWhatsmeow),
 	}).First(&userContact)
 
-	return userContact, result.Error == nil, lid == "", lid != ""
+	return userContact, result.Error == nil
 }
 
-func CreateCocoContactJid(id string) (CocoContact, bool) {
+func CreateCocoContactJid(id types.JID) (CocoContact, bool) {
 	db := state.State.Database
 
-	jid, _ := types.ParseJID(id)
-
 	userContact := CocoContact{
-		Jid: jid.ToNonAD().String(),
+		Jid:      GetDatabaseJid(id),
+		PushName: id.User,
 	}
 	result := db.Create(&userContact)
 
 	return userContact, result.Error == nil
 }
 
-func CreateCocoContactLid(id string) (CocoContact, bool) {
+func CreateCocoContactLid(id types.JID) (CocoContact, bool) {
 	db := state.State.Database
 
-	lid, _ := types.ParseJID(id)
-
 	userContact := CocoContact{
-		Lid: lid.ToNonAD().String(),
+		Lid:      GetDatabaseJid(id),
+		PushName: id.User,
 	}
 	result := db.Create(&userContact)
 
@@ -450,38 +447,39 @@ func CreateCocoContactLid(id string) (CocoContact, bool) {
 }
 
 // GetJidLid IDK how to put this in utils, so it's gonna live here
-func GetJidLid(chatId string, altId string) (string, string) {
+func GetJidLid(chatId types.JID, altId types.JID) (string, string) {
 	lid := ""
 	jid := ""
-	chat, _ := types.ParseJID(chatId)
-	if chat.Server == "lid" {
-		lid = chat.ToNonAD().String()
+	if chatId.Server == "lid" {
+		lid = GetDatabaseJid(chatId)
 	} else {
-		jid = chat.ToNonAD().String()
+		jid = GetDatabaseJid(chatId)
 	}
 
-	alt, _ := types.ParseJID(altId)
-	if alt.Server == "lid" {
+	if altId.Server == "lid" {
 		if lid != "" {
 			panic("both id's were lids...")
 		}
-		lid = alt.ToNonAD().String()
+		lid = GetDatabaseJid(altId)
 	} else {
-		jid = alt.ToNonAD().String()
+		jid = GetDatabaseJid(altId)
 	}
 
 	return jid, lid
 }
 
-func GetJidOrLid(id string) (string, string) {
+func GetJidOrLid(id types.JID) (string, string) {
 	lid := ""
 	jid := ""
-	chat, _ := types.ParseJID(id)
-	if chat.Server == "lid" {
-		lid = chat.ToNonAD().String()
+	if id.Server == "lid" {
+		lid = GetDatabaseJid(id)
 	} else {
-		jid = chat.ToNonAD().String()
+		jid = GetDatabaseJid(id)
 	}
 
 	return jid, lid
+}
+
+func GetDatabaseJid(j types.JID) string {
+	return j.ToNonAD().String()
 }
