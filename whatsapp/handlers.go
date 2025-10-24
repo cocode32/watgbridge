@@ -1420,6 +1420,8 @@ func CallOfferEventHandler(v *events.CallOffer) {
 }
 
 func ReceiptEventHandler(v *events.Receipt) {
+	// TODO sent a reaction for two ticks on whatsapp
+
 	// I want to react here, but need to figure out the message context
 	//utils.SendMessageDeliveredConfirmation(state.State.TelegramBot, state.State.Config.Telegram.TargetChatID)
 }
@@ -1589,27 +1591,34 @@ func PictureEventHandler(v *events.Picture) {
 		return
 	}
 
-	SendPictureToInfoUpdatesThread(v, cfg, logger, tgBot, waClient)
+	SendPictureToInfoUpdatesThread(v, cfg, logger, tgBot, waClient, false)
 
-	// TODO I still need to fix the lid thing here, but for right now, at least I can get everyone's update posted because i will override and create a topic for it alone
-	_, threadFound := database.GetChatThread(v.JID)
+	var tgThreadId int64
+	var err error
+	cocoChatThread, threadFound := database.GetChatThread(v.JID)
 	if !threadFound {
 		logger.Warn(
 			"no thread found for a WhatsApp chat (handling Picture event)",
 			zap.String("chat", v.JID.String()),
 		)
-	}
 
-	if v.JID.Server == waTypes.GroupServer {
-		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetGroupName(v.JID), "")
+		tgThreadId, _, err = utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetGroupName(v.JID), "")
 		if err != nil {
 			logger.Warn(
 				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
 				zap.String("chat", v.JID.String()),
 				zap.Error(err),
 			)
+			SendPictureToInfoUpdatesThread(v, cfg, logger, tgBot, waClient, true)
 			return
 		}
+
+		return
+	} else {
+		tgThreadId = cocoChatThread.ThreadId
+	}
+
+	if v.JID.Server == waTypes.GroupServer {
 		changer := utils.WaGetContactName(v.Author)
 		if v.Remove {
 			updateText := fmt.Sprintf("The profile picture was removed by %s", html.EscapeString(changer))
@@ -1652,16 +1661,7 @@ func PictureEventHandler(v *events.Picture) {
 				return
 			}
 		}
-	} else if v.JID.Server == waTypes.DefaultUserServer {
-		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(v.JID.ToNonAD().String(), utils.WaGetContactName(v.JID.ToNonAD()), "")
-		if err != nil {
-			logger.Warn(
-				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
-				zap.String("chat", v.JID.String()),
-				zap.Error(err),
-			)
-			return
-		}
+	} else {
 		if v.Remove {
 			updateText := "The profile picture was removed"
 			err = utils.TgSendTextById(
@@ -1703,16 +1703,15 @@ func PictureEventHandler(v *events.Picture) {
 				return
 			}
 		}
-	} else {
-		logger.Warn(
-			"Received Picture event for unknown JID type",
-			zap.String("jid", v.JID.String()),
-		)
 	}
 }
 
-func SendPictureToInfoUpdatesThread(v *events.Picture, cfg *state.Config, logger *zap.Logger, tgBot *gotgbot.Bot, waClient *whatsmeow.Client) bool {
-	if cfg.WhatsApp.CreateThreadForInfoUpdates {
+func SendPictureToInfoUpdatesThread(v *events.Picture, cfg *state.Config, logger *zap.Logger, tgBot *gotgbot.Bot, waClient *whatsmeow.Client, override bool) bool {
+	if cfg.WhatsApp.CreateThreadForInfoUpdates || override {
+		var updateText string
+		if override {
+			updateText += "<b>User not found</b>\nUser's thread was not found, so we sent it here instead\n\n"
+		}
 		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa("coco-info-update@broadcast", "Info Updates", "Info Updates")
 		if err != nil {
 			logger.Warn(
@@ -1724,7 +1723,7 @@ func SendPictureToInfoUpdatesThread(v *events.Picture, cfg *state.Config, logger
 		}
 		changer := utils.WaGetContactName(v.JID.ToNonAD())
 		if v.Remove {
-			updateText := fmt.Sprintf("The profile picture was removed by %s", html.EscapeString(changer))
+			updateText = fmt.Sprintf("The profile picture was removed by %s", html.EscapeString(changer))
 			err = utils.TgSendTextById(
 				tgBot, cfg.Telegram.TargetChatID, tgThreadId,
 				updateText,
@@ -1755,9 +1754,11 @@ func SendPictureToInfoUpdatesThread(v *events.Picture, cfg *state.Config, logger
 				return true
 			}
 
+			updateText += fmt.Sprintf("The profile picture was updated by %s", html.EscapeString(changer))
+
 			_, err = tgBot.SendPhoto(cfg.Telegram.TargetChatID, &gotgbot.FileReader{Data: bytes.NewReader(newPictureBytes)}, &gotgbot.SendPhotoOpts{
 				MessageThreadId: tgThreadId,
-				Caption:         fmt.Sprintf("The profile picture was updated by %s", html.EscapeString(changer)),
+				Caption:         updateText,
 			})
 			if err != nil {
 				logger.Error("failed to send message to the group", zap.Error(err))
