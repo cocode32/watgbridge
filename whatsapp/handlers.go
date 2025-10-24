@@ -245,33 +245,19 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 
 	var bridgedText string
 	// TODO I wanna clean this update. For note for myself, basically leave this as false so that PVT doesn't show, because we know it's a private chat
-	if cfg.WhatsApp.SkipChatDetails {
-		logger.Debug("skipping to add chat details as configured",
-			zap.String("event_id", v.Info.ID),
-		)
-		if v.Info.IsIncomingBroadcast() {
-			bridgedText += "👥: <b>(Broadcast)</b>\n"
-		} else if v.Info.IsFromMe {
-			bridgedText += "🧑: <b>You [other device]</b>\n"
-		} else if v.Info.IsGroup {
-			bridgedText += fmt.Sprintf("🧑: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
-		}
-
+	if v.Info.IsFromMe {
+		bridgedText += "🙊: <b>You [other device]</b>\n"
 	} else {
-
-		if v.Info.IsFromMe {
-			bridgedText += "🧑: <b>You [other device]</b>\n"
-		} else {
+		if !cfg.WhatsApp.SkipChatDetails {
 			bridgedText += fmt.Sprintf("🧑: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
 		}
-		if v.Info.IsIncomingBroadcast() {
-			bridgedText += "👥: <b>(Broadcast)</b>\n"
-		} else if v.Info.IsGroup {
-			bridgedText += fmt.Sprintf("👥: <b>%s</b>\n", html.EscapeString(utils.WaGetGroupName(v.Info.Chat)))
-		} else {
-			bridgedText += "👥: <b>(PVT)</b>\n"
-		}
-
+	}
+	if v.Info.IsIncomingBroadcast() {
+		bridgedText += "📢: <b>(Broadcast)</b>\n"
+	} else if v.Info.IsGroup {
+		bridgedText += fmt.Sprintf("🧑: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
+	} else if !cfg.WhatsApp.SkipChatDetails {
+		bridgedText += "🪪: <b>(PVT)</b>\n"
 	}
 
 	if isEdited {
