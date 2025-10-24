@@ -36,7 +36,8 @@ const (
 func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
 	_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
 		LanguageCode: "en",
-		Scope:        gotgbot.BotCommandScopeDefault{},
+		// TODO - this needs to be scoped otherwise other people can just get your information
+		Scope: gotgbot.BotCommandScopeDefault{},
 	})
 	return err
 }
