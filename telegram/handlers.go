@@ -406,13 +406,13 @@ func SetTargetGroupChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 	}
 	groupJID = groupInfo.JID
 
-	_, threadFound := database.GetChatThread(groupJID.String())
+	_, threadFound := database.GetChatThread(groupJID)
 	if threadFound {
 		_, err = utils.TgReplyTextByContext(b, c, "A topic already exists in database for the given WhatsApp chat. Aborting...", nil, false)
 		return err
 	}
 
-	err = database.AddNewChatThread(groupJID.String(), c.EffectiveMessage.MessageThreadId)
+	err = database.AddNewChatThread(groupJID, c.EffectiveMessage.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to add the mapping in database. Unsuccessful", err)
 	}
@@ -525,13 +525,13 @@ func SetTargetPrivateChatHandler(b *gotgbot.Bot, c *ext.Context) error {
 
 	userJID, _ := utils.WaParseJID(groupID)
 
-	_, threadFound := database.GetChatThread(userJID.String())
+	_, threadFound := database.GetChatThread(userJID)
 	if threadFound {
 		_, err := utils.TgReplyTextByContext(b, c, "A topic already exists in database for the given WhatsApp chat. Aborting...", nil, false)
 		return err
 	}
 
-	err := database.AddNewChatThread(userJID.String(), c.EffectiveMessage.MessageThreadId)
+	err := database.AddNewChatThread(userJID, c.EffectiveMessage.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to add the mapping in database. Unsuccessful", err)
 	}

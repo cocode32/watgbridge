@@ -433,7 +433,7 @@ func CreateCocoContactJid(id types.JID) (CocoContact, bool) {
 
 	userContact := CocoContact{
 		Jid:      GetDatabaseJid(id),
-		PushName: id.User,
+		PushName: "User (" + id.User + ")",
 	}
 	result := db.Create(&userContact)
 
@@ -445,7 +445,7 @@ func CreateCocoContactLid(id types.JID) (CocoContact, bool) {
 
 	userContact := CocoContact{
 		Lid:      GetDatabaseJid(id),
-		PushName: id.User,
+		PushName: "User (" + id.User + ")",
 	}
 	result := db.Create(&userContact)
 
