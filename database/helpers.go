@@ -268,20 +268,9 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 	)
 
 	for k, manualContactData := range contacts {
-		jid, lid := GetJidOrLid(k)
-		if lid == "" {
-			contactNames = append(contactNames, CocoContact{
-				Jid:          jid,
-				Name:         manualContactData.FirstName,
-				PushName:     manualContactData.PushName,
-				BusinessName: manualContactData.BusinessName,
-				FullName:     manualContactData.FullName,
-			})
-			continue
-		}
-
 		contactNames = append(contactNames, CocoContact{
-			Lid:          lid,
+			Jid:          GetDatabaseJid(k),
+			Lid:          GetDatabaseJid(manualContactData.Lid),
 			Name:         manualContactData.FirstName,
 			PushName:     manualContactData.PushName,
 			BusinessName: manualContactData.BusinessName,
