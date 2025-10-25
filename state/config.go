@@ -15,14 +15,11 @@ type Config struct {
 	TimeFormat       string `yaml:"time_format"`
 	FfmpegExecutable string `yaml:"ffmpeg_executable"`
 	DebugMode        bool   `yaml:"debug_mode"`
-
-	UseGithHubBinaries bool   `yaml:"use_github_binaries"`
-	Architecture       string `yaml:"architecture"`
-	SilentDbLogs       bool   `yaml:"silent_db_logs"`
+	SilentDbLogs     bool   `yaml:"silent_db_logs"`
 
 	Telegram struct {
 		BotToken           string  `yaml:"bot_token"`
-		APIURL             string  `yaml:"api_url"`
+		ApiUrl             string  `yaml:"api_url"`
 		SudoUsersID        []int64 `yaml:"sudo_users_id"`
 		OwnerID            int64   `yaml:"owner_id"`
 		TargetChatID       int64   `yaml:"target_chat_id"`
@@ -112,39 +109,15 @@ func (cfg *Config) LoadConfig() error {
 	return nil
 }
 
-// TODO - I don't know if we still want to keep this, it shouldn't be necessary
-// think it's better for the user to set all the values in the config
-//func (cfg *Config) SaveConfig() error {
-//	configFilePath := cfg.Path
-//
-//	configFile, err := os.Create(configFilePath)
-//	if err != nil {
-//		return fmt.Errorf("could not open config file : %s", err)
-//	}
-//	defer configFile.Close()
-//
-//	newConfigBody, err := yaml.Marshal(cfg)
-//	if err != nil {
-//		return fmt.Errorf("failed to marshal config into string : %s", err)
-//	}
-//
-//	_, err = configFile.Write(newConfigBody)
-//	if err != nil {
-//		return fmt.Errorf("failed to write config file : %s", err)
-//	}
-//
-//	return nil
-//}
-
 func (cfg *Config) SetDefaults() {
 	cfg.TimeZone = "UTC"
 
 	cfg.WhatsApp.SessionName = "coco-watg"
 	cfg.WhatsApp.LoginDatabase.Type = "sqlite3"
 	cfg.WhatsApp.LoginDatabase.URL = "file:coco_wawebstore.db?_foreign_keys=on"
-	cfg.WhatsApp.StickerMetadata.PackName = "WaTgBridge"
-	cfg.WhatsApp.StickerMetadata.AuthorName = "WaTgBridge"
+	cfg.WhatsApp.StickerMetadata.PackName = "CocoWaTgBridge"
+	cfg.WhatsApp.StickerMetadata.AuthorName = "CocoWaTgBridge"
 
-	cfg.Telegram.APIURL = gotgbot.DefaultAPIURL
+	cfg.Telegram.ApiUrl = gotgbot.DefaultAPIURL
 	cfg.Telegram.ConfirmationType = "emoji"
 }

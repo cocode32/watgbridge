@@ -25,7 +25,7 @@ func NewTelegramClient() error {
 		BotClient: &gotgbot.BaseBotClient{
 			Client: http.Client{},
 			DefaultRequestOpts: &gotgbot.RequestOpts{
-				APIURL:  cfg.Telegram.APIURL,
+				APIURL:  cfg.Telegram.ApiUrl,
 				Timeout: time.Duration(math.MaxInt64),
 			},
 		},
@@ -77,7 +77,7 @@ func NewTelegramClient() error {
 		zap.Int64("id", bot.Id),
 		zap.String("name", bot.FirstName),
 		zap.String("username", "@"+bot.Username),
-		zap.String("api_url", cfg.Telegram.APIURL),
+		zap.String("api_url", cfg.Telegram.ApiUrl),
 	)
 
 	if !cfg.Telegram.SkipStartupMessage {
