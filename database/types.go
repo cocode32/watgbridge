@@ -40,13 +40,13 @@ type ChatEphemeralSettings struct {
 
 func AutoMigrate() error {
 	db := state.State.Database
-	migrateError := db.AutoMigrate(
+	autoMigrateError := db.AutoMigrate(
 		&MsgIdPair{},
 		&ChatEphemeralSettings{},
 		&CocoContact{},
 		&CocoChatThread{},
 	)
 
-	MigrateDatabase(db)
-	return errors.Join(migrateError)
+	migrateError := MigrateDatabase(db)
+	return errors.Join(autoMigrateError, migrateError)
 }
