@@ -155,9 +155,9 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 	if msgToReplyTo != nil && msgToReplyTo.ForumTopicCreated == nil {
 		stanzaID, participantID, waChatID, err = database.MsgIdGetWaFromTg(c.EffectiveChat.Id, msgToReplyTo.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to retreive a pair from database", err)
+			return utils.TgReplyWithErrorByContext(b, c, "Failed to retrieve a pair from database", err)
 		} else if stanzaID == "" {
-			return utils.TgReplyWithErrorByContext(b, c, "Cannot send to WhatsApp", fmt.Errorf("corresponding stanza Id to replied to message not found"))
+			return utils.TgReplyWithErrorByContext(b, c, "Cannot send to WhatsApp", fmt.Errorf("corresponding stanza Id to reply to message not found"))
 		}
 
 		if waChatID == waClient.Store.ID.String() {
