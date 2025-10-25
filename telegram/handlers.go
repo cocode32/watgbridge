@@ -153,7 +153,7 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 	var err error
 
 	if msgToReplyTo != nil && msgToReplyTo.ForumTopicCreated == nil {
-		stanzaID, participantID, waChatID, err = database.MsgIdGetWaFromTg(c.EffectiveChat.Id, msgToReplyTo.MessageId, msgToForward.MessageThreadId)
+		stanzaID, participantID, waChatID, err = database.MsgIdGetWaFromTg(msgToReplyTo.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return utils.TgReplyWithErrorByContext(b, c, "Failed to retrieve a pair from database", err)
 		} else if stanzaID == "" {
@@ -713,10 +713,9 @@ func RevokeCommandHandler(b *gotgbot.Bot, c *ext.Context) error {
 	var (
 		waClient    = state.State.WhatsAppClient
 		msgToRevoke = c.EffectiveMessage.ReplyToMessage
-		chatId      = c.EffectiveChat.Id
 	)
 
-	waMsgId, _, waChatId, err := database.MsgIdGetWaFromTg(chatId, msgToRevoke.MessageId, msgToRevoke.MessageThreadId)
+	waMsgId, _, waChatId, err := database.MsgIdGetWaFromTg(msgToRevoke.MessageId, msgToRevoke.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "failed to retrieve WhatsApp side IDs", err)
 	}
@@ -799,7 +798,7 @@ func RevokeCallbackHandler(b *gotgbot.Bot, c *ext.Context) error {
 						InlineKeyboard: [][]gotgbot.InlineKeyboardButton{},
 					},
 				})
-				database.MsgIdDeletePair(c.EffectiveChat.Id, c.EffectiveMessage.MessageId)
+				database.MsgIdDeletePair(c.EffectiveMessage.MessageId)
 				return err
 			}
 

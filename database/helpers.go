@@ -14,7 +14,10 @@ func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgMsgId, tgThreadI
 	)
 
 	var bridgePair MsgIdPair
-	res := db.Where("id = ? AND wa_chat_id = ?", waMsgId, waChatId).Find(&bridgePair)
+	res := db.Where(&MsgIdPair{
+		WaMessageId: waMsgId,
+		WaChatJid:   waChatId,
+	}).Find(&bridgePair)
 	if res.Error != nil {
 		return res.Error
 	}
@@ -42,38 +45,45 @@ func MsgIdGetTgFromWa(waMsgId, waChatId string) (int64, int64, error) {
 	db := state.State.Database
 
 	var bridgePair MsgIdPair
-	res := db.Where("id = ? AND wa_chat_id = ?", waMsgId, waChatId).Find(&bridgePair)
+	res := db.Where(&MsgIdPair{
+		WaMessageId: waMsgId,
+		WaChatJid:   waChatId,
+	}).Find(&bridgePair)
 
 	return bridgePair.TgThreadId, bridgePair.TgMessageId, res.Error
 }
 
-func MsgIdGetWaFromTg(tgChatId, tgMsgId, tgThreadId int64) (msgId, participantId, chatId string, err error) {
+func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId string, err error) {
 	db := state.State.Database
 
 	var bridgePair MsgIdPair
-	res := db.Where("tg_chat_id = ? AND tg_msg_id = ? AND tg_thread_id = ?", tgChatId, tgMsgId, tgThreadId).Find(&bridgePair)
+	res := db.Where(&MsgIdPair{
+		TgMessageId: tgMsgId,
+		TgThreadId:  tgThreadId,
+	}).Find(&bridgePair)
 
 	return bridgePair.WaMessageId, bridgePair.WaSenderJid, bridgePair.WaChatJid, res.Error
 }
 
-func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
-
-	db := state.State.Database
-
-	var bridgePairs []MsgIdPair
-	res := db.Where("wa_chat_id = ? AND mark_read = false", waChatId).Find(&bridgePairs)
-
-	var msgIds = make(map[string][]string)
-
-	for _, pair := range bridgePairs {
-		if _, found := msgIds[pair.WaSenderJid]; !found {
-			msgIds[pair.WaSenderJid] = []string{}
-		}
-		msgIds[pair.WaSenderJid] = append(msgIds[pair.WaSenderJid], pair.WaMessageId)
-	}
-
-	return msgIds, res.Error
-}
+//func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
+//
+//	db := state.State.Database
+//
+//	var bridgePairs []MsgIdPair
+//	// TODO - fix this
+//	res := db.Where("wa_chat_id = ? AND mark_read = false", waChatId).Find(&bridgePairs)
+//
+//	var msgIds = make(map[string][]string)
+//
+//	for _, pair := range bridgePairs {
+//		if _, found := msgIds[pair.WaSenderJid]; !found {
+//			msgIds[pair.WaSenderJid] = []string{}
+//		}
+//		msgIds[pair.WaSenderJid] = append(msgIds[pair.WaSenderJid], pair.WaMessageId)
+//	}
+//
+//	return msgIds, res.Error
+//}
 
 // TODO make use of this function
 //func MsgIdMarkRead(waChatId, waMsgId string) error {
@@ -81,7 +91,10 @@ func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
 //	db := state.State.Database
 //
 //	var bridgePair MsgIdPair
-//	res := db.Where("id = ? AND wa_chat_id = ?", waMsgId, waChatId).Find(&bridgePair)
+//	res := db.Where(&MsgIdPair{
+//		WaMessageId: waMsgId,
+//		WaChatJid: waChatId,
+//	}).Find(&bridgePair)
 //	if res.Error != nil {
 //		return res.Error
 //	}
@@ -95,10 +108,12 @@ func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
 //	return nil
 //}
 
-func MsgIdDeletePair(tgChatId, tgMsgId int64) error {
+func MsgIdDeletePair(tgMsgId int64) error {
 
 	db := state.State.Database
-	res := db.Where("tg_chat_id = ? AND tg_msg_id = ?", tgChatId, tgMsgId).Delete(&MsgIdPair{})
+	res := db.Where(&MsgIdPair{
+		TgMessageId: tgMsgId,
+	}).Delete(&MsgIdPair{})
 
 	return res.Error
 }
@@ -381,7 +396,7 @@ func UpdateEphemeralSettings(waChatId string, isEphemeral bool, ephemeralTimer u
 	db := state.State.Database
 
 	var settings ChatEphemeralSettings
-	res := db.Where("id = ?", waChatId).Find(&settings)
+	res := db.Where(&ChatEphemeralSettings{ID: waChatId}).Find(&settings)
 
 	if res.Error != nil {
 		return res.Error
@@ -408,7 +423,7 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 	db := state.State.Database
 
 	var settings ChatEphemeralSettings
-	res := db.Where("id = ?", waChatId).Find(&settings)
+	res := db.Where(&ChatEphemeralSettings{ID: waChatId}).Find(&settings)
 
 	if res.Error != nil {
 		return false, 0, false, res.Error
