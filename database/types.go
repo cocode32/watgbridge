@@ -1,8 +1,6 @@
 package database
 
 import (
-	"database/sql"
-
 	"watgbridge/state"
 )
 
@@ -29,11 +27,8 @@ type MsgIdPair struct {
 	WaChatId      string // Chat JID
 
 	// Telegram
-	TgChatId   int64
 	TgThreadId int64
 	TgMsgId    int64
-
-	MarkRead sql.NullBool
 }
 
 type ChatEphemeralSettings struct {
@@ -44,10 +39,13 @@ type ChatEphemeralSettings struct {
 
 func AutoMigrate() error {
 	db := state.State.Database
-	return db.AutoMigrate(
+	migrateError := db.AutoMigrate(
 		&MsgIdPair{},
 		&ChatEphemeralSettings{},
 		&CocoContact{},
 		&CocoChatThread{},
 	)
+
+	MigrateDatabase(db)
+	return migrateError
 }
