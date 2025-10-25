@@ -1387,13 +1387,12 @@ func ReceiptEventHandler(v *events.Receipt) {
 		tgBot  = state.State.TelegramBot
 		cfg    = state.State.Config
 	)
-	fmt.Printf("Are we getting in here?")
 
 	// events of this type can come with many messages, so we want to react to all of them
 	for _, waMessageId := range v.MessageIDs {
 		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
 		if err != nil {
-			logger.Warn("No message was found to react to for the receipt of a message on whatsapp",
+			logger.Debug("No message was found to react to for the receipt of a message on whatsapp",
 				zap.String("message id", waMessageId),
 				zap.String("chat id", v.Chat.String()),
 				zap.String("Where to look", "Check in the MsgIdPair table"),
