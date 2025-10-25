@@ -164,10 +164,16 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 			waChatID = participantID
 		}
 	} else {
-		_, found := database.ChatThreadGetWaFromTg(c.EffectiveMessage.MessageThreadId)
+		cocoContact, found := database.ChatThreadGetWaFromTg(c.EffectiveMessage.MessageThreadId)
 		if !found {
 			_, err = utils.TgReplyTextByContext(b, c, "No mapping found between current topic and a WhatsApp chat", nil, false)
 			return err
+		}
+
+		if cocoContact.Jid == "" {
+			waChatID = cocoContact.Lid
+		} else {
+			waChatID = cocoContact.Jid
 		}
 	}
 
