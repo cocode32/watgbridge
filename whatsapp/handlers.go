@@ -1389,6 +1389,10 @@ func ReceiptEventHandler(v *events.Receipt) {
 	)
 
 	// events of this type can come with many messages, so we want to react to all of them
+	if v.IsFromMe {
+		// nothing to do here, because we don't care about our messages
+		return
+	}
 	for _, waMessageId := range v.MessageIDs {
 		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
 		if err != nil {

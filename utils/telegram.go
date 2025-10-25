@@ -1122,7 +1122,7 @@ func SendMessageDeliveredConfirmation(
 	targetChatId int64,
 	tgMessageId int64,
 ) {
-	a, err := b.SetMessageReaction(
+	b.SetMessageReaction(
 		targetChatId,
 		tgMessageId,
 		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🤝"}}},
