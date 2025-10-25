@@ -19,21 +19,21 @@ func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgMsgId, tgThreadI
 		return res.Error
 	}
 
-	if bridgePair.ID == waMsgId {
-		bridgePair.ParticipantId = participantId
-		bridgePair.WaChatId = waChatId
-		bridgePair.TgMsgId = tgMsgId
+	if bridgePair.WaMessageId == waMsgId {
+		bridgePair.WaSenderJid = participantId
+		bridgePair.WaChatJid = waChatId
+		bridgePair.TgMessageId = tgMsgId
 		bridgePair.TgThreadId = tgThreadId
 		res = db.Save(&bridgePair)
 		return res.Error
 	}
 	// else
 	res = db.Create(&MsgIdPair{
-		ID:            waMsgId,
-		ParticipantId: participantId,
-		WaChatId:      waChatId,
-		TgMsgId:       tgMsgId,
-		TgThreadId:    tgThreadId,
+		WaMessageId: waMsgId,
+		WaSenderJid: participantId,
+		WaChatJid:   waChatId,
+		TgMessageId: tgMsgId,
+		TgThreadId:  tgThreadId,
 	})
 	return res.Error
 }
@@ -44,7 +44,7 @@ func MsgIdGetTgFromWa(waMsgId, waChatId string) (int64, int64, error) {
 	var bridgePair MsgIdPair
 	res := db.Where("id = ? AND wa_chat_id = ?", waMsgId, waChatId).Find(&bridgePair)
 
-	return bridgePair.TgThreadId, bridgePair.TgMsgId, res.Error
+	return bridgePair.TgThreadId, bridgePair.TgMessageId, res.Error
 }
 
 func MsgIdGetWaFromTg(tgChatId, tgMsgId, tgThreadId int64) (msgId, participantId, chatId string, err error) {
@@ -53,7 +53,7 @@ func MsgIdGetWaFromTg(tgChatId, tgMsgId, tgThreadId int64) (msgId, participantId
 	var bridgePair MsgIdPair
 	res := db.Where("tg_chat_id = ? AND tg_msg_id = ? AND tg_thread_id = ?", tgChatId, tgMsgId, tgThreadId).Find(&bridgePair)
 
-	return bridgePair.ID, bridgePair.ParticipantId, bridgePair.WaChatId, res.Error
+	return bridgePair.WaMessageId, bridgePair.WaSenderJid, bridgePair.WaChatJid, res.Error
 }
 
 func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
@@ -66,10 +66,10 @@ func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
 	var msgIds = make(map[string][]string)
 
 	for _, pair := range bridgePairs {
-		if _, found := msgIds[pair.ParticipantId]; !found {
-			msgIds[pair.ParticipantId] = []string{}
+		if _, found := msgIds[pair.WaSenderJid]; !found {
+			msgIds[pair.WaSenderJid] = []string{}
 		}
-		msgIds[pair.ParticipantId] = append(msgIds[pair.ParticipantId], pair.ID)
+		msgIds[pair.WaSenderJid] = append(msgIds[pair.WaSenderJid], pair.WaMessageId)
 	}
 
 	return msgIds, res.Error
