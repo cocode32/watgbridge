@@ -77,8 +77,25 @@ func NewWhatsAppClient() error {
 	// consider tweaking this to get more information from the initial login
 	store.DeviceProps.Os = proto.String(state.State.Config.WhatsApp.SessionName)
 	store.DeviceProps.RequireFullSync = proto.Bool(false)
-	// add a little flair to your linked devices
-	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_FIREFOX.Enum()
+	/*
+		add a little flair to your linked devices
+
+		an explanation to my future self
+		//
+		If you ever see .Enum() functions on protobuf enums, that’s just a helper that does exactly this:
+		pt := waCompanionReg.DeviceProps_PlatformType(
+			waCompanionReg.DeviceProps_PlatformType_value[state.State.Config.WhatsApp.BrowserName],
+		)
+		store.DeviceProps.PlatformType = &pt
+		//
+
+		So basically, when we used to have
+		waCompanionReg.DeviceProps_FIREFOX.Enum()
+		it was taking the name of firefox and putting it in the platform type
+		and then, the platform type was assigned the pointer.
+		that's what .Enum() does
+	*/
+	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_PlatformType(waCompanionReg.DeviceProps_PlatformType_value[state.State.Config.WhatsApp.BrowserName]).Enum()
 	store.DeviceProps.HistorySyncConfig = &waCompanionReg.DeviceProps_HistorySyncConfig{
 		FullSyncDaysLimit:              proto.Uint32(0),
 		FullSyncSizeMbLimit:            proto.Uint32(0),

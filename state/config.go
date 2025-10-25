@@ -45,6 +45,7 @@ type Config struct {
 			AuthorName string `yaml:"author_name"`
 		} `yaml:"sticker_metadata"`
 		SessionName                    string   `yaml:"session_name"`
+		BrowserName                    string   `yaml:"browser_name"`
 		TagAllAllowedGroups            []string `yaml:"tag_all_allowed_groups"`
 		IgnoreChats                    []string `yaml:"ignore_chats"`
 		StatusIgnoredChats             []string `yaml:"status_ignored_chats"`
@@ -113,6 +114,7 @@ func (cfg *Config) SetDefaults() {
 	cfg.TimeZone = "UTC"
 
 	cfg.WhatsApp.SessionName = "coco-watg"
+	cfg.WhatsApp.BrowserName = "FIREFOX"
 	cfg.WhatsApp.LoginDatabase.Type = "sqlite3"
 	cfg.WhatsApp.LoginDatabase.URL = "file:coco_wawebstore.db?_foreign_keys=on"
 	cfg.WhatsApp.StickerMetadata.PackName = "CocoWaTgBridge"

@@ -72,6 +72,8 @@ whatsapp:
 
   # the name which will appear in your linked devices on whatsapp
   session_name: AkitaInu-BetaNode
+  # List of valid browser names: https://github.com/tulir/whatsmeow/blob/efc632c008604016ddde63bfcfca8de4e5304da9/binary/proto/def.proto#L43-L64
+  browser_name: FIREFOX
 
   # TODO need to confirm if this is working still with changes
   # All these values can be obtained by running /findcontacts and /getwagroups commands
