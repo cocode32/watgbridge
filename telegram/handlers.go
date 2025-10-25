@@ -155,24 +155,26 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 	if msgToReplyTo != nil && msgToReplyTo.ForumTopicCreated == nil {
 		stanzaID, participantID, waChatID, err = database.MsgIdGetWaFromTg(c.EffectiveChat.Id, msgToReplyTo.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to retreive a pair from database", err)
+			return utils.TgReplyWithErrorByContext(b, c, "Failed to retrieve a pair from database", err)
 		} else if stanzaID == "" {
-			return utils.TgReplyWithErrorByContext(b, c, "Cannot send to WhatsApp", fmt.Errorf("corresponding stanza Id to replied to message not found"))
+			return utils.TgReplyWithErrorByContext(b, c, "Cannot send to WhatsApp", fmt.Errorf("corresponding stanza Id to reply to message not found"))
 		}
 
 		if waChatID == waClient.Store.ID.String() {
 			waChatID = participantID
 		}
 	} else {
-		_, found := database.ChatThreadGetWaFromTg(c.EffectiveMessage.MessageThreadId)
+		cocoContact, found := database.ChatThreadGetWaFromTg(c.EffectiveMessage.MessageThreadId)
 		if !found {
-			return utils.TgReplyWithErrorByContext(b, c, "Failed to find the chat pairing between this topic and a WhatsApp chat", errors.New("god only knows"))
-		}
-		if c.EffectiveMessage.MessageThreadId != 0 {
 			_, err = utils.TgReplyTextByContext(b, c, "No mapping found between current topic and a WhatsApp chat", nil, false)
 			return err
 		}
-		return nil
+
+		if cocoContact.Jid == "" {
+			waChatID = cocoContact.Lid
+		} else {
+			waChatID = cocoContact.Jid
+		}
 	}
 
 	// Status Update

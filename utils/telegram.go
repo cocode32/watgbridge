@@ -81,7 +81,7 @@ func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/file/bot%s/%s",
-		state.State.Config.Telegram.APIURL, b.Token, filePath), nil)
+		state.State.Config.Telegram.ApiUrl, b.Token, filePath), nil)
 	if err != nil {
 		return nil, err
 	}
