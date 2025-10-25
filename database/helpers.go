@@ -219,7 +219,7 @@ func ChatThreadGetWaFromTg(tgThreadId int64) (CocoContact, bool) {
 	res := db.Where(&CocoChatThread{
 		ThreadId: tgThreadId,
 	}).First(&chatPair)
-	if res.Error != nil {
+	if res.Error == nil {
 		res = db.Where(&CocoContact{ID: chatPair.CocoContactId}).First(&cocoContact)
 	}
 
