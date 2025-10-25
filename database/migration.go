@@ -14,5 +14,5 @@ func MigrateDatabase(db *gorm.DB) error {
 	m, _ := migrate.NewWithDatabaseInstance(
 		"file://database/migrations/sqlite",
 		"sqlite3", driver)
-	return m.Up()
+	return m.Down()
 }
