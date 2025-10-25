@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"watgbridge/state"
 )
 
@@ -47,5 +48,5 @@ func AutoMigrate() error {
 	)
 
 	MigrateDatabase(db)
-	return migrateError
+	return errors.Join(migrateError)
 }
