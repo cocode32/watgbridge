@@ -218,9 +218,9 @@ func ChatThreadGetWaFromTg(tgThreadId int64) (CocoContact, bool) {
 	var cocoContact CocoContact
 	res := db.Where(&CocoChatThread{
 		ThreadId: tgThreadId,
-	}).Find(&chatPair)
+	}).First(&chatPair)
 	if res.Error != nil {
-		res = db.Where(&CocoContact{ID: chatPair.CocoContactId}).Find(&cocoContact)
+		res = db.Where(&CocoContact{ID: chatPair.CocoContactId}).First(&cocoContact)
 	}
 
 	return cocoContact, res.Error == nil
