@@ -777,8 +777,8 @@ func RevokeCallbackHandler(b *gotgbot.Bot, c *ext.Context) error {
 		} else if confirmation == "y" {
 
 			chatJid, _ := utils.WaParseJID(data[2])
-			revokeMesssage := waClient.BuildRevoke(chatJid, waTypes.EmptyJID, data[1])
-			_, err := waClient.SendMessage(context.Background(), chatJid, revokeMesssage)
+			revokeMessage := waClient.BuildRevoke(chatJid, waTypes.EmptyJID, data[1])
+			_, err := waClient.SendMessage(context.Background(), chatJid, revokeMessage)
 			if err != nil {
 				_, err = cq.Answer(b, &gotgbot.AnswerCallbackQueryOpts{
 					Text:      "Failed to send revoke message : " + err.Error(),

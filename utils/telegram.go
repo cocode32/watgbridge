@@ -359,7 +359,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 			},
 		})
 		if err != nil {
-			return TgReplyWithErrorByContext(b, c, "Failed to retreive video file from Telegram", err)
+			return TgReplyWithErrorByContext(b, c, "Failed to retrieve video file from Telegram", err)
 		}
 
 		videoBytes, err := TgDownloadByFilePath(b, videoFile.FilePath)
@@ -1119,11 +1119,12 @@ func SendMessageConfirmation(
 
 func SendMessageDeliveredConfirmation(
 	b *gotgbot.Bot,
-	msgToForward *gotgbot.Message,
+	targetChatId int64,
+	tgMessageId int64,
 ) {
 	b.SetMessageReaction(
-		msgToForward.Chat.Id,
-		msgToForward.MessageId,
+		targetChatId,
+		tgMessageId,
 		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
 	)
 	//switch cfg.Telegram.ConfirmationType {

@@ -1382,10 +1382,26 @@ func CallOfferEventHandler(v *events.CallOffer) {
 }
 
 func ReceiptEventHandler(v *events.Receipt) {
-	// TODO sent a reaction for two ticks on whatsapp
+	var (
+		logger = state.State.Logger
+		tgBot  = state.State.TelegramBot
+		cfg    = state.State.Config
+	)
+	fmt.Printf("Are we getting in here?")
 
-	// I want to react here, but need to figure out the message context
-	//utils.SendMessageDeliveredConfirmation(state.State.TelegramBot, state.State.Config.Telegram.TargetChatID)
+	// events of this type can come with many messages, so we want to react to all of them
+	for _, waMessageId := range v.MessageIDs {
+		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
+		if err != nil {
+			logger.Warn("No message was found to react to for the receipt of a message on whatsapp",
+				zap.String("message id", waMessageId),
+				zap.String("chat id", v.Chat.String()),
+				zap.String("Where to look", "Check in the MsgIdPair table"),
+			)
+			continue
+		}
+		utils.SendMessageDeliveredConfirmation(tgBot, cfg.Telegram.TargetChatID, tgMsgId)
+	}
 }
 
 func PushNameEventHandler(v *events.PushName) {
