@@ -1155,7 +1155,7 @@ func MarkMessageWithEmoji(
 	_, err := b.SetMessageReaction(
 		targetChatId,
 		tgMessageId,
-		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: emoji}}, IsBig: true},
+		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: emoji}}},
 	)
 	if err != nil {
 		logger.Debug("Failed to set message reaction for delivered confirmation. Error: ",
