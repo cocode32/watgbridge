@@ -8,6 +8,7 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -92,16 +93,50 @@ func PromptGetProfilePictureHandler(b *gotgbot.Bot, c *ext.Context) error {
 		chatId = c.EffectiveChat.Id
 	)
 
-	userBotState.Store(userId, &BotConversationState{
-		Command: "picture",
-		Step:    "picture",
-	})
+	// 1. Pull WhatsApp contacts
+	contacts, err := state.State.WhatsAppClient.Store.Contacts.GetAllContacts(context.Background())
+	if err != nil {
+		return utils.TgSendTextByContext(b, c, "Failed to fetch contacts.")
+	}
 
-	_, err := b.SendMessage(c.EffectiveChat.Id, "Send me the WhatsApp ID (like 123456789@g.us):", nil)
+	// Build list of IDs/names for inline buttons
+	var options []string
+	for _, contact := range contacts {
+		options = append(options, contact.PushName)
+	}
+	//options = append(options, "Custom") // Add custom option
+
+	// Store state
+	userState := &BotConversationState{
+		Command:    "picture",
+		Step:       "picture",
+		Started:    time.Now(),
+		Selectable: options,
+		Data:       make(map[string]string),
+	}
+
+	// Build inline keyboard
+	var rows [][]gotgbot.InlineKeyboardButton
+	for i, opt := range options {
+		button := gotgbot.InlineKeyboardButton{
+			Text:         opt,
+			CallbackData: opt + strconv.Itoa(i),
+		}
+		rows = append(rows, []gotgbot.InlineKeyboardButton{button})
+	}
+
+	keyboard := &gotgbot.InlineKeyboardMarkup{
+		InlineKeyboard: rows,
+	}
+
+	userBotState.Store(userId, userState)
 
 	setPromptTimeout(userId, chatId, "picture", b, c)
 
-	return err
+	fmt.Println("sending message with keyboard")
+	e := utils.TgSendTextByContextWithKeyboard(b, c, "select", keyboard)
+	fmt.Println(fmt.Sprintf("%v", e))
+	return nil
 }
 
 func AddTelegramHandlers() {

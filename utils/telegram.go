@@ -132,6 +132,20 @@ func TgSetReactionByContext(b *gotgbot.Bot, c *ext.Context, emoji string) error 
 	return err
 }
 
+func TgSendTextByContext(b *gotgbot.Bot, c *ext.Context, text string) error {
+	_, err := b.SendMessage(c.EffectiveChat.Id, text, nil)
+	return err
+}
+
+func TgSendTextByContextWithKeyboard(b *gotgbot.Bot, c *ext.Context, text string, buttons *gotgbot.InlineKeyboardMarkup) error {
+	sendOpts := &gotgbot.SendMessageOpts{
+		ReplyMarkup: buttons,
+	}
+
+	_, err := b.SendMessage(c.EffectiveChat.Id, text, sendOpts)
+	return err
+}
+
 func TgSendTextById(b *gotgbot.Bot, chatId int64, threadId int64, text string) error {
 	_, err := b.SendMessage(chatId, text, &gotgbot.SendMessageOpts{
 		MessageThreadId: threadId})
