@@ -11,8 +11,6 @@ By using or distributing this software, you acknowledge that:
 
 # Current Work In Progress
 
-- There seems to be a bug, where I can mark other people's message's as read - through the receipts... How the hell whatsapp's api allows you to do that is beyond me, so IDK...
-  - Don't use read_receipts right now, because for some reason, you mark your contact's message as read when you send them your receipt....
 - I'm also working on command select and enter so that the commands for the users are easier to do
 
 # coco_sanity changes
