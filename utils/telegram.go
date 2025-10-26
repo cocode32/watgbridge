@@ -1041,7 +1041,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	// reworked logic from original fork
 	var messageIds []string
 	unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
-	lidUnread, err := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
+	lidUnread, err := database.MsgIdGetUnreadWa(waChatJID, waClient.Store.LID)
 	allUnread := append(unreadMessages, lidUnread...)
 	if cfg.Telegram.SendReadReceiptsOnReply {
 		if err != nil {
