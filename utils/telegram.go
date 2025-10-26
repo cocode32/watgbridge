@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 	"unicode"
 
@@ -1059,10 +1058,8 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
 		}
-
-		waitGroup := sync.WaitGroup{}
+		
 		for _, idPair := range unreadMessages {
-			waitGroup.Add(1)
 			go func(pair database.MsgIdPair) {
 				senderJID, _ := waTypes.ParseJID(pair.WaSenderJid)
 				err := waClient.MarkRead([]waTypes.MessageID{pair.WaMessageId}, time.Now(), waChatJID, senderJID)
@@ -1073,22 +1070,9 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 						zap.Any("msg_id", pair.WaMessageId),
 						zap.String("sender_jid", senderJID.String()),
 					)
-				} else {
-					err = database.MsgIdMarkReadWa(waChatJID, idPair.WaMessageId)
-					if err != nil {
-						logger.Warn(
-							"failed to mark messages as read on in CocoWaTgBridge db",
-							zap.String("chat_jid", waChatJID.String()),
-							zap.Any("msg_id", pair.WaMessageId),
-							zap.String("sender_jid", senderJID.String()),
-							zap.String("message_id", pair.WaMessageId),
-						)
-					}
 				}
-				waitGroup.Done()
 			}(idPair)
 		}
-		waitGroup.Wait()
 	}
 
 	return nil
