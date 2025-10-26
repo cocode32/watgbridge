@@ -8,7 +8,6 @@ import (
 	"html"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -43,6 +42,17 @@ func isAuthedUserGroup(msg *gotgbot.Message) bool {
 func isAuthedUser(msg *gotgbot.Message) bool {
 	return msg.From.Id == state.State.Config.Telegram.OwnerID && !strings.HasPrefix(msg.Text, "/")
 }
+func isPictureCallback(cq *gotgbot.CallbackQuery) bool {
+	fmt.Println("We here?")
+	userState := &BotConversationState{
+		Command: cq.Data,
+		Step:    "picture",
+		Started: time.Now(),
+		Data:    make(map[string]string),
+	}
+	userBotState.Store(cq.From.Id, userState)
+	return cq.From.Id == state.State.Config.Telegram.OwnerID && strings.HasPrefix(cq.Data, "2")
+}
 
 func getUserBotState(c *ext.Context) *BotConversationState {
 	userId := c.EffectiveUser.Id
@@ -76,9 +86,52 @@ func onMessageHandler(b *gotgbot.Bot, c *ext.Context) error {
 	return nil
 }
 
+func onCallbackQueryHandler(b *gotgbot.Bot, c *ext.Context) error {
+
+	var (
+		waClient = state.State.WhatsAppClient
+	)
+
+	userState := getUserBotState(c)
+	userID := userState.Command
+
+	userJID, _ := utils.WaParseJID(userID)
+
+	ppInfo, err := waClient.GetProfilePictureInfo(userJID, &whatsmeow.GetProfilePictureParams{})
+	if err != nil {
+		return utils.TgReplyWithErrorByContext(b, c, "Failed to fetch profile picture info from WhatsApp", err)
+	}
+
+	res, err := http.DefaultClient.Get(ppInfo.URL)
+	if err != nil {
+		return utils.TgReplyWithErrorByContext(b, c, "Failed to make HTTP GET request to profile picture URL", err)
+	}
+	defer res.Body.Close()
+
+	imgBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return utils.TgReplyWithErrorByContext(b, c, "Failed to read HTTP response body", err)
+	}
+
+	opts := &gotgbot.SendPhotoOpts{
+		ReplyParameters: &gotgbot.ReplyParameters{
+			MessageId: c.EffectiveMessage.MessageId,
+		},
+	}
+	if c.EffectiveMessage.IsTopicMessage {
+		opts.MessageThreadId = c.EffectiveMessage.MessageThreadId
+	}
+	_, err = b.SendPhoto(c.EffectiveChat.Id, &gotgbot.FileReader{Data: bytes.NewReader(imgBytes)}, opts)
+	if err != nil {
+		return utils.TgReplyWithErrorByContext(b, c, "Failed to send photo", err)
+	}
+
+	return nil
+}
+
 func setPromptTimeout(userId int64, chatId int64, step string, b *gotgbot.Bot, c *ext.Context) {
 	go func() {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 		userState := getUserBotState(c)
 		if userState.Step == step {
 			clearUserBotState(userId)
@@ -99,31 +152,30 @@ func PromptGetProfilePictureHandler(b *gotgbot.Bot, c *ext.Context) error {
 		return utils.TgSendTextByContext(b, c, "Failed to fetch contacts.")
 	}
 
-	// Build list of IDs/names for inline buttons
-	var options []string
-	for _, contact := range contacts {
-		options = append(options, contact.PushName)
-	}
 	//options = append(options, "Custom") // Add custom option
 
 	// Store state
 	userState := &BotConversationState{
-		Command:    "picture",
-		Step:       "picture",
-		Started:    time.Now(),
-		Selectable: options,
-		Data:       make(map[string]string),
+		Command: "picture",
+		Step:    "picture",
+		Started: time.Now(),
+		Data:    make(map[string]string),
 	}
 
 	// Build inline keyboard
 	var rows [][]gotgbot.InlineKeyboardButton
-	for i, opt := range options {
+	for jid, contact := range contacts {
 		button := gotgbot.InlineKeyboardButton{
-			Text:         opt,
-			CallbackData: opt + strconv.Itoa(i),
+			Text:         contact.PushName,
+			CallbackData: jid.String(),
 		}
 		rows = append(rows, []gotgbot.InlineKeyboardButton{button})
 	}
+
+	rows = append(rows, []gotgbot.InlineKeyboardButton{gotgbot.InlineKeyboardButton{
+		Text:         "Enter my own",
+		CallbackData: "custom",
+	}})
 
 	keyboard := &gotgbot.InlineKeyboardMarkup{
 		InlineKeyboard: rows,
@@ -133,10 +185,7 @@ func PromptGetProfilePictureHandler(b *gotgbot.Bot, c *ext.Context) error {
 
 	setPromptTimeout(userId, chatId, "picture", b, c)
 
-	fmt.Println("sending message with keyboard")
-	e := utils.TgSendTextByContextWithKeyboard(b, c, "select", keyboard)
-	fmt.Println(fmt.Sprintf("%v", e))
-	return nil
+	return utils.TgSendTextByContextWithKeyboard(b, c, "select", keyboard)
 }
 
 func AddTelegramHandlers() {
@@ -146,6 +195,7 @@ func AddTelegramHandlers() {
 
 	// default message handler
 	dispatcher.AddHandler(handlers.NewMessage(isAuthedUser, onMessageHandler))
+	dispatcher.AddHandler(handlers.NewCallback(isPictureCallback, onCallbackQueryHandler))
 
 	dispatcher.AddHandlerToGroup(handlers.NewMessage(isAuthedUserGroup, BridgeTelegramToWhatsAppHandler), DispatcherForwardHandlerGroup)
 
