@@ -1058,7 +1058,6 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
 		}
-		fmt.Println(len(unreadMessages))
 
 		var messageIds []string
 		for _, idPair := range unreadMessages {
