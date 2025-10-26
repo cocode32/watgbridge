@@ -1394,8 +1394,7 @@ func ReceiptEventHandler(v *events.Receipt) {
 		// nothing to do here, because we don't care about our messages
 		return
 	}
-
-	fmt.Println("Starting a wait cycle")
+	
 	var wg sync.WaitGroup
 	for _, waMessageId := range v.MessageIDs {
 		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
@@ -1422,9 +1421,7 @@ func ReceiptEventHandler(v *events.Receipt) {
 		}()
 	}
 
-	fmt.Println("Waiting on wait cycle")
 	wg.Wait()
-	fmt.Println("wait cycle FINISHED")
 }
 
 func PushNameEventHandler(v *events.PushName) {
