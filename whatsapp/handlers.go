@@ -1405,25 +1405,25 @@ func ReceiptEventHandler(v *events.Receipt) {
 			continue
 		}
 
-		go func(msgId int64) {
+		go func(bot *gotgbot.Bot, targetChatId int64, msgId int64) {
 			// need to check if the message is delivered or read
 			if v.Type == "" {
 				// wait a little, because the delivered message and received message might be right after each other
 				time.Sleep(2 * time.Second)
 				// the message was just delivered
-				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "👍")
+				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "👍")
 			} else if v.Type == "read" {
 				// wait a little, because the delivered message and received message might be right after each other
-				time.Sleep(3 * time.Second)
+				time.Sleep(4 * time.Second)
 				// the message can be marked as read, because the receiver of your message has read receipts turned on
-				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "👀")
+				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "👀")
 			} else if v.Type == "played" {
 				// wait a little, because the delivered message and received message might be right after each other
-				time.Sleep(4 * time.Second)
+				time.Sleep(6 * time.Second)
 				// this is a voice message, and they have pressed play
-				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "🙉")
+				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "🙉")
 			}
-		}(tgMsgId)
+		}(tgBot, cfg.Telegram.TargetChatID, tgMsgId)
 	}
 }
 
