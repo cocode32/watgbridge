@@ -30,19 +30,43 @@ type waTgBridgeCommand struct {
 	description string
 }
 
-var commands = []waTgBridgeCommand{}
+var commands []waTgBridgeCommand
+
+func isAuthedUserGroup(msg *gotgbot.Message) bool {
+	return msg.Chat.Id == state.State.Config.Telegram.TargetChatID
+}
+
+func isAuthedUser(msg *gotgbot.Message) bool {
+	return msg.From.Id == state.State.Config.Telegram.OwnerID
+}
+
+func onMessageHandler(b *gotgbot.Bot, c *ext.Context) error {
+	fmt.Println("running message handler")
+	//userID := c.EffectiveUser.Id
+	text := c.Message.Text
+
+	//b.SendMessage(c.EffectiveChat.Id, fmt.Sprintf("You said? %s", text), nil)
+	utils.TgReplyTextByContext(b, c, fmt.Sprintf("You said? %s", text), nil, false)
+
+	//if stateVal, ok := userState.Load(userID); ok {
+	//	switch stateVal {
+	//	case "awaiting_profile_id":
+	//		userState.Delete(userID) // clear state so it doesn’t get stuck
+	//		return handleProfilePictureRequest(b, c, text)
+	//	}
+	//}
+	return nil
+}
 
 func AddTelegramHandlers() {
 	var (
-		cfg        = state.State.Config
 		dispatcher = state.State.TelegramDispatcher
 	)
 
-	dispatcher.AddHandlerToGroup(handlers.NewMessage(
-		func(msg *gotgbot.Message) bool {
-			return msg.Chat.Id == cfg.Telegram.TargetChatID
-		}, BridgeTelegramToWhatsAppHandler,
-	), DispatcherForwardHandlerGroup)
+	// default message handler
+	dispatcher.AddHandler(handlers.NewMessage(isAuthedUser, onMessageHandler))
+
+	dispatcher.AddHandlerToGroup(handlers.NewMessage(isAuthedUserGroup, BridgeTelegramToWhatsAppHandler), DispatcherForwardHandlerGroup)
 
 	commands = append(commands,
 		waTgBridgeCommand{
