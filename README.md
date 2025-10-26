@@ -10,7 +10,7 @@ By using or distributing this software, you acknowledge that:
 - You accept full responsibility for any actions or outcomes resulting from its use.
 
 # Current Work In Progress
-
+- Send my read receipts is currently broken...
 - I'm also working on command select and enter so that the commands for the users are easier to do
 
 # coco_sanity changes
