@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"watgbridge/state"
@@ -65,13 +66,14 @@ func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId s
 	return bridgePair.WaMessageId, bridgePair.WaSenderJid, bridgePair.WaChatJid, res.Error
 }
 
-func MsgIdGetUnreadWa(waChatId types.JID) ([]MsgIdPair, error) {
+func MsgIdGetUnreadWa(waChatId types.JID, senderJid types.JID) ([]MsgIdPair, error) {
 	db := state.State.Database
 
 	var bridgePairs []MsgIdPair
 	res := db.Where(&MsgIdPair{
-		WaChatJid: GetDatabaseJid(waChatId),
-		WaIsRead:  false,
+		WaChatJid:   GetDatabaseJid(waChatId),
+		WaSenderJid: GetDatabaseJid(senderJid),
+		WaIsRead:    sql.NullBool{Bool: false, Valid: true},
 	}).Find(&bridgePairs)
 
 	return bridgePairs, res.Error
@@ -81,17 +83,19 @@ func MsgIdMarkReadWa(waChatId types.JID, waMsgId string) error {
 
 	db := state.State.Database
 
-	var bridgePair MsgIdPair
+	var bridgePairs []MsgIdPair
 	res := db.Where(&MsgIdPair{
 		WaMessageId: waMsgId,
 		WaChatJid:   GetDatabaseJid(waChatId),
-	}).First(&bridgePair)
+	}).Find(&bridgePairs)
 	if res.Error != nil {
 		return res.Error
 	}
 
-	bridgePair.WaIsRead = true
-	saveRes := db.Save(&bridgePair)
+	for _, bridgePair := range bridgePairs {
+		bridgePair.WaIsRead = sql.NullBool{Bool: true, Valid: true}
+	}
+	saveRes := db.Save(&bridgePairs)
 	return saveRes.Error
 }
 
