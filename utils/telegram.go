@@ -1041,12 +1041,14 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	// reworked logic from original fork
 	var messageIds []string
 	unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
+	lidUnread, err := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
+	allUnread := append(unreadMessages, lidUnread...)
 	if cfg.Telegram.SendReadReceiptsOnReply {
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
 		}
 
-		for _, idPair := range unreadMessages {
+		for _, idPair := range allUnread {
 			messageIds = append(messageIds, idPair.WaMessageId)
 			senderJID, _ := waTypes.ParseJID(idPair.WaSenderJid)
 			err = waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, senderJID)
