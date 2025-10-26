@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -1054,12 +1055,14 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 	// reworked logic from original fork
 	if cfg.Telegram.SendReadReceiptsOnReply {
-		unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID)
+		unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
 		}
 
+		waitGroup := sync.WaitGroup{}
 		for _, idPair := range unreadMessages {
+			waitGroup.Add(1)
 			go func(pair database.MsgIdPair) {
 				senderJID, _ := waTypes.ParseJID(pair.WaSenderJid)
 				err := waClient.MarkRead([]waTypes.MessageID{pair.WaMessageId}, time.Now(), waChatJID, senderJID)
@@ -1082,8 +1085,10 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 						)
 					}
 				}
+				waitGroup.Done()
 			}(idPair)
 		}
+		waitGroup.Wait()
 	}
 
 	return nil

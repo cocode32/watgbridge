@@ -40,7 +40,7 @@ func isAuthedUserGroup(msg *gotgbot.Message) bool {
 }
 
 func isAuthedUser(msg *gotgbot.Message) bool {
-	return msg.From.Id == state.State.Config.Telegram.OwnerID && !strings.HasPrefix(msg.Text, "/")
+	return msg.From.Id == state.State.Config.Telegram.OwnerID && !strings.HasPrefix(msg.Text, "/") && strings.HasPrefix(msg.Text, "!")
 }
 func isPictureCallback(cq *gotgbot.CallbackQuery) bool {
 	fmt.Println("We here?")
