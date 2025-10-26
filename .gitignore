@@ -17,6 +17,7 @@
 *.yaml
 !sample_config.yaml
 !coco_config.yaml
+get-latest.sh
 
 /watgbridge
 *.db
