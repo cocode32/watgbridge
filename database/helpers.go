@@ -90,6 +90,17 @@ func MsgIdMarkReadWa(waMsgIds []string) error {
 	return saveRes.Error
 }
 
+func MsgIdMarkReadWaAsFalse(waMsgIds []string) error {
+	db := state.State.Database
+
+	saveRes := db.Model(&MsgIdPair{}).
+		Where("wa_message_id IN ?", waMsgIds).
+		Updates(map[string]interface{}{
+			"wa_is_read": false,
+		})
+	return saveRes.Error
+}
+
 func MsgIdDeletePair(tgMsgId int64) error {
 
 	db := state.State.Database
