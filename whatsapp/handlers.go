@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"html"
 	"strings"
-	"sync"
 	"time"
 
 	"watgbridge/database"
@@ -1395,7 +1394,6 @@ func ReceiptEventHandler(v *events.Receipt) {
 		return
 	}
 
-	var wg sync.WaitGroup
 	for _, waMessageId := range v.MessageIDs {
 		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
 		if err != nil {
@@ -1406,10 +1404,8 @@ func ReceiptEventHandler(v *events.Receipt) {
 			)
 			continue
 		}
-		wg.Add(1)
 
 		go func(msgId int64) {
-			defer wg.Done()
 			// need to check if the message is delivered or read
 			if v.Type == "" {
 				// wait a little, because the delivered message and received message might be right after each other
@@ -1429,8 +1425,6 @@ func ReceiptEventHandler(v *events.Receipt) {
 			}
 		}(tgMsgId)
 	}
-
-	wg.Wait()
 }
 
 func PushNameEventHandler(v *events.PushName) {
