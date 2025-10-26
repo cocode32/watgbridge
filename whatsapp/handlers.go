@@ -1372,11 +1372,11 @@ func CallOfferEventHandler(v *events.CallOffer) {
 
 	callThreadId, _, err := utils.TgGetOrMakeThreadFromWa("calls@broadcast", "Calls", "Calls")
 	if err != nil {
-		utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retreive corresponding thread id for calls", err)
+		utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retrieve corresponding thread id for calls", err)
 		return
 	}
 
-	bridgeText := fmt.Sprintf("#calls\n\n🧑: <b>%s</b>\n🕛: <b>%s</b>\n\n<i>You received a new call</i>",
+	bridgeText := fmt.Sprintf("<b>📞Incoming Call</b>\n\n🧑: <i>%s</i>\n🕛: <i>%s</i>",
 		html.EscapeString(callerName), html.EscapeString(v.Timestamp.In(state.State.LocalLocation).Format(cfg.TimeFormat)))
 
 	utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, callThreadId, bridgeText)
