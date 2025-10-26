@@ -79,23 +79,14 @@ func MsgIdGetUnreadWa(waChatId types.JID, senderJid types.JID) ([]MsgIdPair, err
 	return bridgePairs, res.Error
 }
 
-func MsgIdMarkReadWa(waChatId types.JID, waMsgId string) error {
-
+func MsgIdMarkReadWa(waMsgIds []string) error {
 	db := state.State.Database
 
-	var bridgePairs []MsgIdPair
-	res := db.Where(&MsgIdPair{
-		WaMessageId: waMsgId,
-		WaChatJid:   GetDatabaseJid(waChatId),
-	}).Find(&bridgePairs)
-	if res.Error != nil {
-		return res.Error
-	}
-
-	for _, bridgePair := range bridgePairs {
-		bridgePair.WaIsRead = sql.NullBool{Bool: true, Valid: true}
-	}
-	saveRes := db.Save(&bridgePairs)
+	saveRes := db.Model(&MsgIdPair{}).
+		Where("wa_message_id IN ?", waMsgIds).
+		Updates(map[string]interface{}{
+			"wa_is_read": true,
+		})
 	return saveRes.Error
 }
 

@@ -1058,20 +1058,30 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
 		}
-		
+		fmt.Println(len(unreadMessages))
+
+		var messageIds []string
 		for _, idPair := range unreadMessages {
-			go func(pair database.MsgIdPair) {
-				senderJID, _ := waTypes.ParseJID(pair.WaSenderJid)
-				err := waClient.MarkRead([]waTypes.MessageID{pair.WaMessageId}, time.Now(), waChatJID, senderJID)
-				if err != nil {
-					logger.Warn(
-						"failed to mark messages as read on whatsapp",
-						zap.String("chat_jid", waChatJID.String()),
-						zap.Any("msg_id", pair.WaMessageId),
-						zap.String("sender_jid", senderJID.String()),
-					)
-				}
-			}(idPair)
+			messageIds = append(messageIds, idPair.WaMessageId)
+			senderJID, _ := waTypes.ParseJID(idPair.WaSenderJid)
+			err := waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, senderJID)
+			if err != nil {
+				logger.Warn(
+					"failed to mark messages as read on whatsapp",
+					zap.String("chat_jid", waChatJID.String()),
+					zap.Any("msg_id", idPair.WaMessageId),
+					zap.String("sender_jid", senderJID.String()),
+				)
+			}
+		}
+
+		err = database.MsgIdMarkReadWa(messageIds)
+		if err != nil {
+			logger.Warn(
+				"failed to mark messages as read on in CocoWaTgBridge db",
+				zap.String("chat_jid", waChatJID.String()),
+				zap.Any("msg_ids", messageIds),
+			)
 		}
 	}
 
