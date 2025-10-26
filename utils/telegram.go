@@ -1106,7 +1106,7 @@ func SendMessageConfirmation(
 		_, err := b.SetMessageReaction(
 			msgToForward.Chat.Id,
 			msgToForward.MessageId,
-			&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🤨"}}},
+			&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🙈"}}},
 		)
 		if err != nil {
 			logger.Debug("Failed to set message reaction for sent message confirmation. Error: ",
@@ -1127,17 +1127,21 @@ func SendMessageConfirmation(
 	}
 }
 
-func SendMessageDeliveredConfirmation(
+func MarkMessageWithEmoji(
 	b *gotgbot.Bot,
 	targetChatId int64,
 	tgMessageId int64,
+	emoji string,
 ) {
 	logger := state.State.Logger
+
+	// wait a little, because the delivered message and received message might be right after each other
+	time.Sleep(2 * time.Second)
 
 	_, err := b.SetMessageReaction(
 		targetChatId,
 		tgMessageId,
-		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🤝"}}},
+		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: emoji}}},
 	)
 	if err != nil {
 		logger.Debug("Failed to set message reaction for delivered confirmation. Error: ",

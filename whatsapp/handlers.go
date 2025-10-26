@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"sync"
 	"time"
 
 	"watgbridge/database"
@@ -1393,6 +1394,9 @@ func ReceiptEventHandler(v *events.Receipt) {
 		// nothing to do here, because we don't care about our messages
 		return
 	}
+
+	fmt.Println("Starting a wait cycle")
+	var wg sync.WaitGroup
 	for _, waMessageId := range v.MessageIDs {
 		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
 		if err != nil {
@@ -1403,8 +1407,24 @@ func ReceiptEventHandler(v *events.Receipt) {
 			)
 			continue
 		}
-		utils.SendMessageDeliveredConfirmation(tgBot, cfg.Telegram.TargetChatID, tgMsgId)
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+			// need to check if the message is delivered or read
+			if v.Type == "" {
+				// the message was just delivered
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, tgMsgId, "🤝")
+			} else if v.Type == "read" {
+				// the message can be marked as read, because the receiver of your message has read receipts turned on
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, tgMsgId, "💯")
+			}
+		}()
 	}
+
+	fmt.Println("Waiting on wait cycle")
+	wg.Wait()
+	fmt.Println("wait cycle FINISHED")
 }
 
 func PushNameEventHandler(v *events.PushName) {
