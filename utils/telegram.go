@@ -1152,9 +1152,6 @@ func MarkMessageWithEmoji(
 ) {
 	logger := state.State.Logger
 
-	// wait a little, because the delivered message and received message might be right after each other
-	time.Sleep(2 * time.Second)
-
 	_, err := b.SetMessageReaction(
 		targetChatId,
 		tgMessageId,

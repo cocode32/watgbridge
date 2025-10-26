@@ -1412,12 +1412,18 @@ func ReceiptEventHandler(v *events.Receipt) {
 			defer wg.Done()
 			// need to check if the message is delivered or read
 			if v.Type == "" {
+				// wait a little, because the delivered message and received message might be right after each other
+				time.Sleep(2 * time.Second)
 				// the message was just delivered
 				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "👍")
 			} else if v.Type == "read" {
+				// wait a little, because the delivered message and received message might be right after each other
+				time.Sleep(3 * time.Second)
 				// the message can be marked as read, because the receiver of your message has read receipts turned on
 				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "👀")
 			} else if v.Type == "played" {
+				// wait a little, because the delivered message and received message might be right after each other
+				time.Sleep(4 * time.Second)
 				// this is a voice message, and they have pressed play
 				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "🙉")
 			}
