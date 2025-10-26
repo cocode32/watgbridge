@@ -36,10 +36,13 @@ telegram:
   skip_video_stickers: false
   # the bot commands are set automatically. If you would like to "clean" your bot for example, to remove all watgbridge commands, set this to true
   remove_bot_commands: false
-  # send "online" to whatsapp when you are on telegram?
-  send_my_presence: false
-  # TODO work in progress
-  send_my_read_receipts: true
+  # send "online" to whatsapp when you reply to a message
+  # your "online" status will be set for 10 seconds after a single reply from telegram
+  send_my_presence_on_reply: false
+  # as the setting imlpies, this will send a read reciept to the contact when you sent a message from telegram
+  # this helps in making sure that your messages in the whatsapp app itself don't pile up
+  # if you want to remove notifications from the app, but still keep your messages private, then set the read reciepts in whatsapp to false
+  send_read_receipts_on_reply: true
   # don't receive notifications from the bot (specifically in the group, on telegram) when you react or send a message
   silent_confirmation: true
   # options: "emoji", "text"

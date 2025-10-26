@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"sync"
 	"time"
 
 	"watgbridge/database"
@@ -267,8 +268,8 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 
 	if !isEdited {
 		// Return if duplicate event is emitted
-		tgChatId, _, _, _ := database.MsgIdGetTgFromWa(msgId, v.Info.Chat.String())
-		if tgChatId == cfg.Telegram.TargetChatID {
+		_, _, err := database.MsgIdGetTgFromWa(msgId, v.Info.Chat.String())
+		if err != nil {
 			logger.Debug("returning because duplicate event id emitted",
 				zap.String("event_id", v.Info.ID),
 				zap.String("chat_jid", v.Info.Chat.String()),
@@ -349,11 +350,11 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 
 	if isEdited {
 
-		tgChatId, tgThreadId, tgMsgId, err := database.MsgIdGetTgFromWa(
+		tgThreadId, tgMsgId, err := database.MsgIdGetTgFromWa(
 			v.Message.GetProtocolMessage().GetKey().GetID(),
 			v.Info.Chat.String(),
 		)
-		if err == nil && tgChatId == cfg.Telegram.TargetChatID {
+		if err == nil {
 			replyToMsgId = tgMsgId
 			threadId = tgThreadId
 			threadIdFound = true
@@ -478,8 +479,8 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				zap.String("event_id", v.Info.ID),
 			)
 			stanzaId := contextInfo.GetStanzaID()
-			tgChatId, tgThreadId, tgMsgId, err := database.MsgIdGetTgFromWa(stanzaId, v.Info.Chat.String())
-			if err == nil && tgChatId == cfg.Telegram.TargetChatID {
+			tgThreadId, tgMsgId, err := database.MsgIdGetTgFromWa(stanzaId, v.Info.Chat.String())
+			if err == nil {
 				replyToMsgId = tgMsgId
 				threadId = tgThreadId
 				threadIdFound = true
@@ -588,8 +589,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else if !cfg.Telegram.SelfHostedAPI && imageMsg.GetFileLength() > utils.UploadSizeLimit {
@@ -601,8 +601,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else {
@@ -616,8 +615,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					MessageThreadId: threadId,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 			}
@@ -639,8 +637,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -661,8 +658,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else if !cfg.Telegram.SelfHostedAPI && gifMsg.GetFileLength() > utils.UploadSizeLimit {
@@ -674,8 +670,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else {
@@ -689,8 +684,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					MessageThreadId: threadId,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 			}
@@ -716,8 +710,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -746,8 +739,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else if !cfg.Telegram.SelfHostedAPI && videoMsg.GetFileLength() > utils.UploadSizeLimit {
@@ -759,8 +751,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else {
@@ -774,8 +765,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					MessageThreadId: threadId,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 			}
@@ -813,8 +803,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				})
 			}
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -835,8 +824,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else if !cfg.Telegram.SelfHostedAPI && audioMsg.GetFileLength() > utils.UploadSizeLimit {
@@ -848,8 +836,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else {
@@ -863,8 +850,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					MessageThreadId: threadId,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 			}
@@ -883,8 +869,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -905,8 +890,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else if !cfg.Telegram.SelfHostedAPI && audioMsg.GetFileLength() > utils.UploadSizeLimit {
@@ -918,8 +902,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else {
@@ -933,8 +916,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					MessageThreadId: threadId,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 			}
@@ -953,8 +935,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -975,8 +956,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else if !cfg.Telegram.SelfHostedAPI && documentMsg.GetFileLength() > utils.UploadSizeLimit {
@@ -988,8 +968,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else {
@@ -1003,8 +982,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					MessageThreadId: threadId,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 			}
@@ -1030,8 +1008,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -1052,8 +1029,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else if !cfg.Telegram.SelfHostedAPI && stickerMsg.GetFileLength() > utils.UploadSizeLimit {
@@ -1065,8 +1041,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		} else {
@@ -1080,8 +1055,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					MessageThreadId: threadId,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 			}
@@ -1105,8 +1079,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					ReplyMarkup:     replyMarkup,
 				})
 				if sentMsg.MessageId != 0 {
-					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-						cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+					database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 				}
 				return
 
@@ -1120,8 +1093,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				ReplyMarkup:     replyMarkup,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 		}
 
@@ -1137,8 +1109,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -1154,8 +1125,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -1170,8 +1140,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				ReplyMarkup:     replyMarkup,
 			})
 		if sentMsg.MessageId != 0 {
-			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-				cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 		}
 		return
 
@@ -1188,8 +1157,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -1217,8 +1185,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 					ReplyMarkup:     replyMarkup,
 				})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 		}
 		return
@@ -1236,8 +1203,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -1250,8 +1216,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 		if sentMsg.MessageId != 0 {
-			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-				cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 		}
 
 		return
@@ -1269,8 +1234,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				MessageThreadId: threadId,
 			})
 			if sentMsg.MessageId != 0 {
-				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-					cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 			}
 			return
 		}
@@ -1282,8 +1246,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			MessageThreadId: threadId,
 		})
 		if sentMsg.MessageId != 0 {
-			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-				cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 		}
 		return
 
@@ -1316,15 +1279,14 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			MessageThreadId: threadId,
 		})
 		if sentMsg.MessageId != 0 {
-			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-				cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 		}
 		return
 
 	} else {
 		if text == "" {
 			if reactionMsg := v.Message.GetReactionMessage(); cfg.Telegram.Reactions && reactionMsg != nil {
-				tgChatId, _, tgMsgId, err := database.MsgIdGetTgFromWa(reactionMsg.Key.GetID(), v.Info.Chat.String())
+				_, tgMsgId, err := database.MsgIdGetTgFromWa(reactionMsg.Key.GetID(), v.Info.Chat.String())
 				if err != nil {
 					logger.Error(
 						"failed to get message ID mapping from database",
@@ -1332,8 +1294,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 						zap.String("stanza_id", reactionMsg.Key.GetID()),
 						zap.String("chat_id", v.Info.Chat.String()),
 					)
-				} else if tgChatId == cfg.Telegram.TargetChatID {
-
+				} else {
 					if *reactionMsg.Text != "" {
 						text = fmt.Sprintf(
 							"<code>Reacted to this message with %s</code>",
@@ -1355,8 +1316,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 						panic(fmt.Errorf("failed to send telegram message: %s", err))
 					}
 					if sentMsg.MessageId != 0 {
-						database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-							cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+						database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 					}
 				}
 
@@ -1395,8 +1355,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			panic(fmt.Errorf("failed to send telegram message: %s", err))
 		}
 		if sentMsg.MessageId != 0 {
-			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender.String(), v.Info.Chat.String(),
-				cfg.Telegram.TargetChatID, sentMsg.MessageId, sentMsg.MessageThreadId)
+			database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
 		}
 		return
 	}
@@ -1413,21 +1372,59 @@ func CallOfferEventHandler(v *events.CallOffer) {
 
 	callThreadId, _, err := utils.TgGetOrMakeThreadFromWa("calls@broadcast", "Calls", "Calls")
 	if err != nil {
-		utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retreive corresponding thread id for calls", err)
+		utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retrieve corresponding thread id for calls", err)
 		return
 	}
 
-	bridgeText := fmt.Sprintf("#calls\n\n🧑: <b>%s</b>\n🕛: <b>%s</b>\n\n<i>You received a new call</i>",
+	bridgeText := fmt.Sprintf("<b>📞Incoming Call</b>\n\n🧑: <i>%s</i>\n🕛: <i>%s</i>",
 		html.EscapeString(callerName), html.EscapeString(v.Timestamp.In(state.State.LocalLocation).Format(cfg.TimeFormat)))
 
 	utils.TgSendTextById(tgBot, cfg.Telegram.TargetChatID, callThreadId, bridgeText)
 }
 
 func ReceiptEventHandler(v *events.Receipt) {
-	// TODO sent a reaction for two ticks on whatsapp
+	var (
+		logger = state.State.Logger
+		tgBot  = state.State.TelegramBot
+		cfg    = state.State.Config
+	)
 
-	// I want to react here, but need to figure out the message context
-	//utils.SendMessageDeliveredConfirmation(state.State.TelegramBot, state.State.Config.Telegram.TargetChatID)
+	// events of this type can come with many messages, so we want to react to all of them
+	if v.IsFromMe {
+		// nothing to do here, because we don't care about our messages
+		return
+	}
+
+	var wg sync.WaitGroup
+	for _, waMessageId := range v.MessageIDs {
+		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
+		if err != nil {
+			logger.Debug("No message was found to react to for the receipt of a message on whatsapp",
+				zap.String("message id", waMessageId),
+				zap.String("chat id", v.Chat.String()),
+				zap.String("Where to look", "Check in the MsgIdPair table"),
+			)
+			continue
+		}
+		wg.Add(1)
+
+		go func(msgId int64) {
+			defer wg.Done()
+			// need to check if the message is delivered or read
+			if v.Type == "" {
+				// the message was just delivered
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "👍")
+			} else if v.Type == "read" {
+				// the message can be marked as read, because the receiver of your message has read receipts turned on
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "👀")
+			} else if v.Type == "played" {
+				// this is a voice message, and they have pressed play
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, msgId, "🙉")
+			}
+		}(tgMsgId)
+	}
+
+	wg.Wait()
 }
 
 func PushNameEventHandler(v *events.PushName) {
@@ -1570,12 +1567,12 @@ func RevokedMessageEventHandler(v *events.Message) {
 		deleterName = utils.WaGetContactName(deleter)
 	}
 
-	tgChatId, tgThreadId, tgMsgId, err := database.MsgIdGetTgFromWa(waMsgId, waChatId)
-	if err != nil || tgChatId == 0 || tgThreadId == 0 || tgMsgId == 0 {
+	tgThreadId, tgMsgId, err := database.MsgIdGetTgFromWa(waMsgId, waChatId)
+	if err != nil || tgThreadId == 0 || tgMsgId == 0 {
 		return
 	}
 
-	tgBot.SendMessage(tgChatId, fmt.Sprintf(
+	tgBot.SendMessage(cfg.Telegram.TargetChatID, fmt.Sprintf(
 		"<i>This message was revoked by %s</i>",
 		html.EscapeString(deleterName),
 	), &gotgbot.SendMessageOpts{
@@ -2078,20 +2075,7 @@ func InitialSyncContactsHandler() {
 		"Starting INITIAL sync of contacts... may take some time",
 	)
 
-	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
-
-	wrappedContacts := make(map[waTypes.JID]database.CocoContactInfo, len(contacts))
-	for jid, info := range contacts {
-		lid, _ := waClient.Store.LIDs.GetLIDForPN(context.Background(), jid.ToNonAD())
-		wrappedContacts[jid] = database.CocoContactInfo{
-			ContactInfo: &info,
-			Lid:         lid,
-		}
-	}
-
-	if err == nil {
-		err = database.ContactNameBulkAddOrUpdate(wrappedContacts)
-	}
+	err := SyncContactsWithBridge(waClient)
 	if err != nil {
 		logger.Error(
 			"Something broke when we tried to insert the contacts into the database",

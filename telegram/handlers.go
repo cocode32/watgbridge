@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"watgbridge/whatsapp"
 
 	"watgbridge/database"
 	"watgbridge/state"
@@ -153,7 +154,7 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 	var err error
 
 	if msgToReplyTo != nil && msgToReplyTo.ForumTopicCreated == nil {
-		stanzaID, participantID, waChatID, err = database.MsgIdGetWaFromTg(c.EffectiveChat.Id, msgToReplyTo.MessageId, msgToForward.MessageThreadId)
+		stanzaID, participantID, waChatID, err = database.MsgIdGetWaFromTg(msgToReplyTo.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return utils.TgReplyWithErrorByContext(b, c, "Failed to retrieve a pair from database", err)
 		} else if stanzaID == "" {
@@ -167,6 +168,7 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 		cocoContact, found := database.ChatThreadGetWaFromTg(c.EffectiveMessage.MessageThreadId)
 		if !found {
 			_, err = utils.TgReplyTextByContext(b, c, "No mapping found between current topic and a WhatsApp chat", nil, false)
+			utils.TgSetReactionByContext(b, c, "🤷‍♀️")
 			return err
 		}
 
@@ -316,21 +318,7 @@ func SyncContactsHandler(b *gotgbot.Bot, c *ext.Context) error {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to sync contacts", err)
 	}
 
-	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
-
-	// TODO this code is duplicated it needs to be cleaned
-	wrappedContacts := make(map[waTypes.JID]database.CocoContactInfo, len(contacts))
-	for jid, info := range contacts {
-		lid, _ := waClient.Store.LIDs.GetLIDForPN(context.Background(), jid.ToNonAD())
-		wrappedContacts[jid] = database.CocoContactInfo{
-			ContactInfo: &info,
-			Lid:         lid,
-		}
-	}
-
-	if err == nil {
-		err = database.ContactNameBulkAddOrUpdate(wrappedContacts)
-	}
+	err = whatsapp.SyncContactsWithBridge(waClient)
 	if err != nil {
 		_, err = utils.TgReplyTextByContext(b, c, "Something broke when we tried to insert the contacts into the database", nil, false)
 	}
@@ -471,7 +459,12 @@ func UnlinkThreadHandler(b *gotgbot.Bot, c *ext.Context) error {
 	return err
 }
 
+// I need to implement the block and unblock user stuff still
+// I found that this didn't work so, I need to double-check it
+//
+//goland:noinspection ALL
 func handleBlockUnblockUser(b *gotgbot.Bot, c *ext.Context, action events.BlocklistChangeAction) error {
+	// TODO implement
 	if !utils.TgUpdateIsAuthorized(b, c) {
 		return nil
 	}
@@ -713,10 +706,9 @@ func RevokeCommandHandler(b *gotgbot.Bot, c *ext.Context) error {
 	var (
 		waClient    = state.State.WhatsAppClient
 		msgToRevoke = c.EffectiveMessage.ReplyToMessage
-		chatId      = c.EffectiveChat.Id
 	)
 
-	waMsgId, _, waChatId, err := database.MsgIdGetWaFromTg(chatId, msgToRevoke.MessageId, msgToRevoke.MessageThreadId)
+	waMsgId, _, waChatId, err := database.MsgIdGetWaFromTg(msgToRevoke.MessageId, msgToRevoke.MessageThreadId)
 	if err != nil {
 		return utils.TgReplyWithErrorByContext(b, c, "failed to retrieve WhatsApp side IDs", err)
 	}
@@ -777,8 +769,8 @@ func RevokeCallbackHandler(b *gotgbot.Bot, c *ext.Context) error {
 		} else if confirmation == "y" {
 
 			chatJid, _ := utils.WaParseJID(data[2])
-			revokeMesssage := waClient.BuildRevoke(chatJid, waTypes.EmptyJID, data[1])
-			_, err := waClient.SendMessage(context.Background(), chatJid, revokeMesssage)
+			revokeMessage := waClient.BuildRevoke(chatJid, waTypes.EmptyJID, data[1])
+			_, err := waClient.SendMessage(context.Background(), chatJid, revokeMessage)
 			if err != nil {
 				_, err = cq.Answer(b, &gotgbot.AnswerCallbackQueryOpts{
 					Text:      "Failed to send revoke message : " + err.Error(),
@@ -799,7 +791,7 @@ func RevokeCallbackHandler(b *gotgbot.Bot, c *ext.Context) error {
 						InlineKeyboard: [][]gotgbot.InlineKeyboardButton{},
 					},
 				})
-				database.MsgIdDeletePair(c.EffectiveChat.Id, c.EffectiveMessage.MessageId)
+				database.MsgIdDeletePair(c.EffectiveMessage.MessageId)
 				return err
 			}
 

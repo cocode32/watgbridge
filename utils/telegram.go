@@ -122,6 +122,16 @@ func TgReplyTextByContext(b *gotgbot.Bot, c *ext.Context, text string, buttons *
 	return msg, err
 }
 
+func TgSetReactionByContext(b *gotgbot.Bot, c *ext.Context, emoji string) error {
+	_, err := b.SetMessageReaction(
+		c.EffectiveChat.Id,
+		c.EffectiveMessage.MessageId,
+		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: emoji}}},
+	)
+
+	return err
+}
+
 func TgSendTextById(b *gotgbot.Bot, chatId int64, threadId int64, text string) error {
 	_, err := b.SendMessage(chatId, text, &gotgbot.SendMessageOpts{
 		MessageThreadId: threadId})
@@ -208,7 +218,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	for _, entity := range entities {
 		if entity.Type == "mention" {
 			username := entity.Text[1:]
-			// Check if its a number
+			// Check if it's a number
 			for _, c := range username {
 				if !unicode.IsDigit(c) {
 					continue
@@ -220,7 +230,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		}
 	}
 
-	if cfg.Telegram.SendMyPresence {
+	if cfg.Telegram.SendMyPresenceOnReply {
 		err := waClient.SendPresence(waTypes.PresenceAvailable)
 		if err != nil {
 			logger.Warn("failed to send presence",
@@ -341,8 +351,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -360,7 +369,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 			},
 		})
 		if err != nil {
-			return TgReplyWithErrorByContext(b, c, "Failed to retreive video file from Telegram", err)
+			return TgReplyWithErrorByContext(b, c, "Failed to retrieve video file from Telegram", err)
 		}
 
 		videoBytes, err := TgDownloadByFilePath(b, videoFile.FilePath)
@@ -410,8 +419,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -476,8 +484,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -545,8 +552,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -609,8 +615,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -673,8 +678,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -738,8 +742,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -843,8 +846,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -856,7 +858,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		if contact.FirstName != "" {
 			displayName = contact.FirstName
 			if contact.LastName != "" {
-				displayName += (" " + contact.LastName)
+				displayName += " " + contact.LastName
 			}
 		} else {
 			displayName = contact.PhoneNumber
@@ -906,8 +908,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -915,7 +916,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	} else if msgToForward.Location != nil {
 
 		location := msgToForward.Location
-		isLive := (location.LivePeriod > 0)
+		isLive := location.LivePeriod > 0
 
 		msgToSend := &waE2E.Message{}
 		if isLive {
@@ -960,8 +961,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -1024,8 +1024,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		revokeKeyboard := TgMakeRevokeKeyboard(sentMsg.ID, waChatJID.String(), false)
 		SendMessageConfirmation(b, c, cfg, msgToForward, revokeKeyboard)
 
-		err = database.MsgIdAddNewPair(sentMsg.ID, waClient.Store.ID.String(), waChatJID.String(),
-			cfg.Telegram.TargetChatID, msgToForward.MessageId, msgToForward.MessageThreadId)
+		err = database.MsgIdAddNewPair(sentMsg.ID, *waClient.Store.ID, waChatJID, msgToForward.MessageId, msgToForward.MessageThreadId)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Failed to add to database", err)
 		}
@@ -1039,30 +1038,38 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 	}
 
-	if cfg.Telegram.SendMyReadReceipts {
-		unreadMsgs, err := database.MsgIdGetUnread(waChatJID.String())
+	// reworked logic from original fork
+	if cfg.Telegram.SendReadReceiptsOnReply {
+		unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
 		}
 
-		for sender, msgIds := range unreadMsgs {
-			senderJID, _ := WaParseJID(sender)
-			err := waClient.MarkRead(msgIds, time.Now(), waChatJID, senderJID)
-			if err != nil {
-				logger.Warn(
-					"failed to mark messages as read",
-					zap.String("chat_id", waChatJID.String()),
-					zap.Any("msg_ids", msgIds),
-					zap.String("sender", senderJID.String()),
-				)
-			} else {
-				for _, msgId := range msgIds {
-					database.MsgIdMarkRead(waChatJID.String(), msgId)
+		for _, idPair := range unreadMessages {
+			go func(pair database.MsgIdPair) {
+				senderJID, _ := waTypes.ParseJID(pair.WaSenderJid)
+				err := waClient.MarkRead([]waTypes.MessageID{pair.WaMessageId}, time.Now(), waChatJID, senderJID)
+				if err != nil {
+					logger.Warn(
+						"failed to mark messages as read on whatsapp",
+						zap.String("chat_jid", waChatJID.String()),
+						zap.Any("msg_id", pair.WaMessageId),
+						zap.String("sender_jid", senderJID.String()),
+					)
+				} else {
+					err = database.MsgIdMarkReadWa(waChatJID, idPair.WaMessageId)
+					if err != nil {
+						logger.Warn(
+							"failed to mark messages as read on in CocoWaTgBridge db",
+							zap.String("chat_jid", waChatJID.String()),
+							zap.Any("msg_id", pair.WaMessageId),
+							zap.String("sender_jid", senderJID.String()),
+							zap.String("message_id", pair.WaMessageId),
+						)
+					}
 				}
-			}
+			}(idPair)
 		}
-
-		// waClient.MarkRead(unreadMsgs, time.Now(), waChatJID, )
 	}
 
 	return nil
@@ -1109,47 +1116,52 @@ func SendMessageConfirmation(
 	msgToForward *gotgbot.Message,
 	revokeKeyboard *gotgbot.InlineKeyboardMarkup,
 ) {
+	logger := state.State.Logger
+
 	switch cfg.Telegram.ConfirmationType {
 	case "emoji":
-		b.SetMessageReaction(
+		_, err := b.SetMessageReaction(
 			msgToForward.Chat.Id,
 			msgToForward.MessageId,
-			&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "👍"}}},
+			&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🤔"}}},
 		)
+		if err != nil {
+			logger.Debug("Failed to set message reaction for sent message confirmation. Error: ",
+				zap.Error(err))
+		}
 	case "text":
 		msg, err := TgReplyTextByContext(b, c, "Successfully sent", revokeKeyboard, cfg.Telegram.SilentConfirmation)
 		if err == nil {
 			go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
 				time.Sleep(15 * time.Second)
-				_b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+				_, err = _b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+				if err != nil {
+					logger.Debug("Failed to remove successfully sent message for sent message confirmation. Error: ",
+						zap.Error(err))
+				}
 			}(b, msg)
 		}
 	}
 }
 
-func SendMessageDeliveredConfirmation(
+func MarkMessageWithEmoji(
 	b *gotgbot.Bot,
-	msgToForward *gotgbot.Message,
+	targetChatId int64,
+	tgMessageId int64,
+	emoji string,
 ) {
-	b.SetMessageReaction(
-		msgToForward.Chat.Id,
-		msgToForward.MessageId,
-		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
+	logger := state.State.Logger
+
+	// wait a little, because the delivered message and received message might be right after each other
+	time.Sleep(2 * time.Second)
+
+	_, err := b.SetMessageReaction(
+		targetChatId,
+		tgMessageId,
+		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: emoji}}},
 	)
-	//switch cfg.Telegram.ConfirmationType {
-	//case "emoji":
-	//	b.SetMessageReaction(
-	//		msgToForward.Chat.Id,
-	//		msgToForward.MessageId,
-	//		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
-	//	)
-	//case "text":
-	//	msg, err := TgReplyTextByContext(b, c, "Message delivered to device", nil, cfg.Telegram.SilentConfirmation)
-	//	if err == nil {
-	//		go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
-	//			time.Sleep(15 * time.Second)
-	//			_b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
-	//		}(b, msg)
-	//	}
-	//}
+	if err != nil {
+		logger.Debug("Failed to set message reaction for delivered confirmation. Error: ",
+			zap.Error(err))
+	}
 }

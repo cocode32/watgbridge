@@ -19,6 +19,9 @@ var (
 )
 
 func GetNewTelegramHandlerGroup() int {
+	// TODO - I don't know enough to understand if this is actually used somewhere
+	// I think I need to check the git history here, I think this is old
+
 	lock.Lock()
 	defer lock.Unlock()
 

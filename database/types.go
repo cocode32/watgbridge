@@ -1,8 +1,6 @@
 package database
 
 import (
-	"database/sql"
-
 	"watgbridge/state"
 )
 
@@ -24,16 +22,14 @@ type CocoChatThread struct {
 
 type MsgIdPair struct {
 	// WhatsApp
-	ID            string `gorm:"primaryKey;"` // Message ID
-	ParticipantId string // Sender JID
-	WaChatId      string // Chat JID
+	WaMessageId string `gorm:"primaryKey;"` // Message ID
+	WaSenderJid string // Sender JID
+	WaChatJid   string // Chat JID
+	WaIsRead    bool   // keep track of messages we sent to whatsapp to mark as read
 
 	// Telegram
-	TgChatId   int64
-	TgThreadId int64
-	TgMsgId    int64
-
-	MarkRead sql.NullBool
+	TgThreadId  int64
+	TgMessageId int64
 }
 
 type ChatEphemeralSettings struct {

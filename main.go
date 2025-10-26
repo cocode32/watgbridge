@@ -12,6 +12,7 @@ import (
 	"watgbridge/utils"
 	"watgbridge/whatsapp"
 
+	"github.com/go-co-op/gocron"
 	"go.uber.org/zap"
 )
 
@@ -81,7 +82,7 @@ func main() {
 	state.State.Database = db
 	err = database.AutoMigrate()
 	if err != nil {
-		logger.Fatal("could not migrate database tabels",
+		logger.Fatal("could not migrate database tables",
 			zap.Error(err),
 		)
 		panic("unable to migrate database")
@@ -127,14 +128,14 @@ func main() {
 	// manage recurring tasks
 	state.State.StartTime = time.Now().UTC()
 
-	// s := gocron.NewScheduler(time.UTC)
-	// s.TagsUnique()
-	// _, _ = s.Every(1).Hour().Tag("foo").Do(func() {
-	// 	contacts, err := state.State.WhatsAppClient.Store.Contacts.GetAllContacts(context.Background())
-	// 	if err == nil {
-	// 		_ = database.ContactNameBulkAddOrUpdate(contacts)
-	// 	}
-	// })
+	s := gocron.NewScheduler(time.UTC)
+	s.TagsUnique()
+	_, scheduleErr := s.Every(1).Hour().Tag("contact_update").Do(func() {
+		_ = whatsapp.SyncContactsWithBridge(state.State.WhatsAppClient)
+	})
+	if scheduleErr != nil {
+		fmt.Printf("Failed to schedule contact update %v\n\n", scheduleErr)
+	}
 
 	// keep the application running
 	state.State.TelegramUpdater.Idle()

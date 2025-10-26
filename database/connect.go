@@ -12,8 +12,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-func hasKeys(p_map *map[string]string, keys ...string) (missingKeys []string) {
-	m := *p_map
+func hasKeys(propertyMap *map[string]string, keys ...string) (missingKeys []string) {
+	m := *propertyMap
 	for _, key := range keys {
 		_, exists := m[key]
 		if !exists {

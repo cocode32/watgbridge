@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"watgbridge/state"
@@ -9,101 +8,99 @@ import (
 	"go.mau.fi/whatsmeow/types"
 )
 
-func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgChatId, tgMsgId, tgThreadId int64) error {
-
-	db := state.State.Database
+func MsgIdAddNewPair(waMsgId string, participantId types.JID, waChatId types.JID, tgMsgId, tgThreadId int64) error {
+	var (
+		db = state.State.Database
+	)
 
 	var bridgePair MsgIdPair
-	res := db.Where("id = ? AND wa_chat_id = ?", waMsgId, waChatId).Find(&bridgePair)
+	res := db.Where(&MsgIdPair{
+		WaMessageId: waMsgId,
+		WaChatJid:   GetDatabaseJid(waChatId),
+	}).Find(&bridgePair)
 	if res.Error != nil {
 		return res.Error
 	}
 
-	if bridgePair.ID == waMsgId {
-		bridgePair.ParticipantId = participantId
-		bridgePair.WaChatId = waChatId
-		bridgePair.TgChatId = tgChatId
-		bridgePair.TgMsgId = tgMsgId
+	if bridgePair.WaMessageId == waMsgId {
+		bridgePair.WaSenderJid = GetDatabaseJid(participantId)
+		bridgePair.WaChatJid = GetDatabaseJid(waChatId)
+		bridgePair.TgMessageId = tgMsgId
 		bridgePair.TgThreadId = tgThreadId
-		bridgePair.MarkRead = sql.NullBool{Valid: true, Bool: false}
 		res = db.Save(&bridgePair)
 		return res.Error
 	}
 	// else
 	res = db.Create(&MsgIdPair{
-		ID:            waMsgId,
-		ParticipantId: participantId,
-		WaChatId:      waChatId,
-		TgChatId:      tgChatId,
-		TgMsgId:       tgMsgId,
-		TgThreadId:    tgThreadId,
-		MarkRead:      sql.NullBool{Valid: true, Bool: false},
+		WaMessageId: waMsgId,
+		WaSenderJid: GetDatabaseJid(participantId),
+		WaChatJid:   GetDatabaseJid(waChatId),
+		TgMessageId: tgMsgId,
+		TgThreadId:  tgThreadId,
 	})
 	return res.Error
 }
 
-func MsgIdGetTgFromWa(waMsgId, waChatId string) (int64, int64, int64, error) {
-
+func MsgIdGetTgFromWa(waMsgId, waChatId string) (int64, int64, error) {
 	db := state.State.Database
 
 	var bridgePair MsgIdPair
-	res := db.Where("id = ? AND wa_chat_id = ?", waMsgId, waChatId).Find(&bridgePair)
+	res := db.Where(&MsgIdPair{
+		WaMessageId: waMsgId,
+		WaChatJid:   waChatId,
+	}).Find(&bridgePair)
 
-	return bridgePair.TgChatId, bridgePair.TgThreadId, bridgePair.TgMsgId, res.Error
+	return bridgePair.TgThreadId, bridgePair.TgMessageId, res.Error
 }
 
-func MsgIdGetWaFromTg(tgChatId, tgMsgId, tgThreadId int64) (msgId, participantId, chatId string, err error) {
-
+func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId string, err error) {
 	db := state.State.Database
 
 	var bridgePair MsgIdPair
-	res := db.Where("tg_chat_id = ? AND tg_msg_id = ? AND tg_thread_id = ?", tgChatId, tgMsgId, tgThreadId).Find(&bridgePair)
+	res := db.Where(&MsgIdPair{
+		TgMessageId: tgMsgId,
+		TgThreadId:  tgThreadId,
+	}).Find(&bridgePair)
 
-	return bridgePair.ID, bridgePair.ParticipantId, bridgePair.WaChatId, res.Error
+	return bridgePair.WaMessageId, bridgePair.WaSenderJid, bridgePair.WaChatJid, res.Error
 }
 
-func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
-
+func MsgIdGetUnreadWa(waChatId types.JID) ([]MsgIdPair, error) {
 	db := state.State.Database
 
 	var bridgePairs []MsgIdPair
-	res := db.Where("wa_chat_id = ? AND mark_read = false", waChatId).Find(&bridgePairs)
+	res := db.Where(&MsgIdPair{
+		WaChatJid: GetDatabaseJid(waChatId),
+		WaIsRead:  false,
+	}).Find(&bridgePairs)
 
-	var msgIds = make(map[string][]string)
-
-	for _, pair := range bridgePairs {
-		if _, found := msgIds[pair.ParticipantId]; !found {
-			msgIds[pair.ParticipantId] = []string{}
-		}
-		msgIds[pair.ParticipantId] = append(msgIds[pair.ParticipantId], pair.ID)
-	}
-
-	return msgIds, res.Error
+	return bridgePairs, res.Error
 }
 
-func MsgIdMarkRead(waChatId, waMsgId string) error {
+func MsgIdMarkReadWa(waChatId types.JID, waMsgId string) error {
 
 	db := state.State.Database
 
 	var bridgePair MsgIdPair
-	res := db.Where("id = ? AND wa_chat_id = ?", waMsgId, waChatId).Find(&bridgePair)
+	res := db.Where(&MsgIdPair{
+		WaMessageId: waMsgId,
+		WaChatJid:   GetDatabaseJid(waChatId),
+	}).First(&bridgePair)
 	if res.Error != nil {
 		return res.Error
 	}
 
-	if bridgePair.ID == waMsgId {
-		bridgePair.MarkRead = sql.NullBool{Valid: true, Bool: true}
-		res = db.Save(&bridgePair)
-		return res.Error
-	}
-
-	return nil
+	bridgePair.WaIsRead = true
+	saveRes := db.Save(&bridgePair)
+	return saveRes.Error
 }
 
-func MsgIdDeletePair(tgChatId, tgMsgId int64) error {
+func MsgIdDeletePair(tgMsgId int64) error {
 
 	db := state.State.Database
-	res := db.Where("tg_chat_id = ? AND tg_msg_id = ?", tgChatId, tgMsgId).Delete(&MsgIdPair{})
+	res := db.Where(&MsgIdPair{
+		TgMessageId: tgMsgId,
+	}).Delete(&MsgIdPair{})
 
 	return res.Error
 }
@@ -386,7 +383,7 @@ func UpdateEphemeralSettings(waChatId string, isEphemeral bool, ephemeralTimer u
 	db := state.State.Database
 
 	var settings ChatEphemeralSettings
-	res := db.Where("id = ?", waChatId).Find(&settings)
+	res := db.Where(&ChatEphemeralSettings{ID: waChatId}).Find(&settings)
 
 	if res.Error != nil {
 		return res.Error
@@ -413,7 +410,7 @@ func GetEphemeralSettings(waChatId string) (bool, uint32, bool, error) {
 	db := state.State.Database
 
 	var settings ChatEphemeralSettings
-	res := db.Where("id = ?", waChatId).Find(&settings)
+	res := db.Where(&ChatEphemeralSettings{ID: waChatId}).Find(&settings)
 
 	if res.Error != nil {
 		return false, 0, false, res.Error
