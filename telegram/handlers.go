@@ -43,46 +43,64 @@ func isAuthedUser(msg *gotgbot.Message) bool {
 	return msg.From.Id == state.State.Config.Telegram.OwnerID && !strings.HasPrefix(msg.Text, "/")
 }
 
-func getUserBotState(userId int64) BotConversationState {
+func getUserBotState(c *ext.Context) *BotConversationState {
+	userId := c.EffectiveUser.Id
 	if val, ok := userBotState.Load(userId); ok {
-		return val.(BotConversationState)
+		return val.(*BotConversationState)
 	}
-	return BotConversationState{}
+	return &BotConversationState{}
+}
+
+func clearUserBotState(userId int64) {
+	userBotState.Delete(userId)
 }
 
 func onMessageHandler(b *gotgbot.Bot, c *ext.Context) error {
-	//userID := c.EffectiveUser.Id
-	text := c.Message.Text
+	var (
+		userId = c.EffectiveUser.Id
+		chatId = c.EffectiveChat.Id
+	)
 
-	currentState := getUserBotState(c.EffectiveUser.Id)
+	currentState := getUserBotState(c)
 	switch currentState.Command {
 	case "":
-		_, _ = b.SendMessage(c.EffectiveChat.Id, "Hello there :)", nil)
+		_, _ = b.SendMessage(chatId, "Hello there :)", nil)
 		return nil
 	case "help":
-		_, _ = b.SendMessage(c.EffectiveChat.Id, "How can I help?", nil)
-		return nil
+		_, _ = b.SendMessage(chatId, "How can I help?", nil)
 	}
 
-	utils.TgReplyTextByContext(b, c, fmt.Sprintf("You said? %s", text), nil, false)
+	clearUserBotState(userId)
 
-	//if stateVal, ok := userState.Load(userID); ok {
-	//	switch stateVal {
-	//	case "awaiting_profile_id":
-	//		userState.Delete(userID) // clear state so it doesn’t get stuck
-	//		return handleProfilePictureRequest(b, c, text)
-	//	}
-	//}
 	return nil
 }
 
+func setPromptTimeout(userId int64, chatId int64, step string, b *gotgbot.Bot, c *ext.Context) {
+	go func() {
+		time.Sleep(5 * time.Second)
+		userState := getUserBotState(c)
+		if userState.Step == step {
+			clearUserBotState(userId)
+			_, _ = b.SendMessage(chatId, "Prompt timed out", nil)
+		}
+	}()
+}
+
 func PromptGetProfilePictureHandler(b *gotgbot.Bot, c *ext.Context) error {
-	userId := c.EffectiveUser.Id
+	var (
+		userId = c.EffectiveUser.Id
+		chatId = c.EffectiveChat.Id
+	)
+
 	userBotState.Store(userId, &BotConversationState{
-		Command: "help",
+		Command: "picture",
+		Step:    "picture",
 	})
 
 	_, err := b.SendMessage(c.EffectiveChat.Id, "Send me the WhatsApp ID (like 123456789@g.us):", nil)
+
+	setPromptTimeout(userId, chatId, "picture", b, c)
+
 	return err
 }
 
@@ -102,7 +120,7 @@ func AddTelegramHandlers() {
 			"",
 		},
 		waTgBridgeCommand{
-			handlers.NewCommand("wtf", PromptGetProfilePictureHandler), "test",
+			handlers.NewCommand("pictures", PromptGetProfilePictureHandler), "Get a profile picture from contacts",
 		},
 		waTgBridgeCommand{
 			handlers.NewCommand("getwagroups", GetWhatsAppGroupsHandler),
