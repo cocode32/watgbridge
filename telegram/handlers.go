@@ -459,7 +459,12 @@ func UnlinkThreadHandler(b *gotgbot.Bot, c *ext.Context) error {
 	return err
 }
 
+// I need to implement the block and unblock user stuff still
+// I found that this didn't work so, I need to double-check it
+//
+//goland:noinspection ALL
 func handleBlockUnblockUser(b *gotgbot.Bot, c *ext.Context, action events.BlocklistChangeAction) error {
+	// TODO implement
 	if !utils.TgUpdateIsAuthorized(b, c) {
 		return nil
 	}

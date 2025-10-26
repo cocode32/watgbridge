@@ -82,7 +82,7 @@ func main() {
 	state.State.Database = db
 	err = database.AutoMigrate()
 	if err != nil {
-		logger.Fatal("could not migrate database tabels",
+		logger.Fatal("could not migrate database tables",
 			zap.Error(err),
 		)
 		panic("unable to migrate database")

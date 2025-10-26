@@ -218,7 +218,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	for _, entity := range entities {
 		if entity.Type == "mention" {
 			username := entity.Text[1:]
-			// Check if its a number
+			// Check if it's a number
 			for _, c := range username {
 				if !unicode.IsDigit(c) {
 					continue
@@ -858,7 +858,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		if contact.FirstName != "" {
 			displayName = contact.FirstName
 			if contact.LastName != "" {
-				displayName += (" " + contact.LastName)
+				displayName += " " + contact.LastName
 			}
 		} else {
 			displayName = contact.PhoneNumber
@@ -916,7 +916,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	} else if msgToForward.Location != nil {
 
 		location := msgToForward.Location
-		isLive := (location.LivePeriod > 0)
+		isLive := location.LivePeriod > 0
 
 		msgToSend := &waE2E.Message{}
 		if isLive {

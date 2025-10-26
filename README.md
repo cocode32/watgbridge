@@ -13,7 +13,7 @@ By using or distributing this software, you acknowledge that:
 
 I've kept the original README.md intact below. I'm adding additional information here for anyone that would like to use this instead of the original.
 
-I don't currently have time to make this backwards compatible for all the users of the original `watgbridge`. So, if someone wants to cherry pick commits from this branch, to merge it into the original; please go ahead.
+I don't currently have time to make this backwards compatible for all the users of the original `watgbridge`. So, if someone wants to cherry-pick commits from this branch, to merge it into the original; please go ahead.
 
 > ⚠️
 >
@@ -78,7 +78,7 @@ sudo -u watgbridge ./watgbridge
 ---
 # WhatsApp-Telegram-Bridge
 
-Despite the name, its not exactly a "bridge". It forwards messages from WhatsApp to Telegram and you can reply to them
+Despite the name, it's not exactly a "bridge". It forwards messages from WhatsApp to Telegram and you can reply to them
 from Telegram.
 
 <a href="https://t.me/PropheCProjects">
@@ -130,7 +130,7 @@ PRs are welcome :)
 - Run `go build`
 - Copy `sample_config.yaml` to `config.yaml` and fill the values, there are comments to help you.
 - Execute the binary by running `./watgbridge`
-- On first run, it will show QR code for logging into WhatsApp that can by scanned by the WhatsApp app in `Linked devices`
+- On first run, it will show QR code for logging into WhatsApp that can be~~~~ scanned by the WhatsApp app in `Linked devices`
 - It is recommended to restart the bot after every few hours becuase WhatsApp likes to disconnect a lot. So a sample Systemd service file has been provided (`watgbridge.service.sample`). Edit the `User` and `ExecStart` according to your setup:
     - If you do not have local bot API server, remove `tgbotapi.service` from the `After` key in `Unit` section.
     - This service file will restart the bot every 24 hours

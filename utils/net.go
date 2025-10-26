@@ -16,6 +16,9 @@ func DownloadFileBytesByURL(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
+// DownloadFileToLocalByURL Keeping this for logic purposes
+//
+//goland:noinspection ALL
 func DownloadFileToLocalByURL(filepath string, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {

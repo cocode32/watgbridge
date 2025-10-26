@@ -79,19 +79,19 @@ func WaFuzzyFindContacts(query string) (map[int]string, int, error) {
 		resultsCount += 1
 		name := ""
 		if contact.FullName != "" {
-			name += (contact.FullName + " (s)")
+			name += contact.FullName + " (local_saved)"
 		}
 		if contact.BusinessName != "" {
 			if name != "" {
 				name += ", "
 			}
-			name += (contact.BusinessName + " (b)")
+			name += contact.BusinessName + " (business_name)"
 		}
 		if contact.PushName != "" {
 			if name != "" {
 				name += ", "
 			}
-			name += (contact.PushName + " (p)")
+			name += contact.PushName + " (push_name)"
 		}
 		results[idIndex] = name
 	}
@@ -223,6 +223,7 @@ func WaTagAll(group types.JID, msg *waE2E.Message, msgId, msgSender string, msgI
 }
 
 func WaSendText(chat types.JID, text, stanzaId, participantId string, quotedMsg *waE2E.Message, isReply bool) (whatsmeow.SendResponse, error) {
+	// TODO - not sure why this is here. Might also be old. Check git history
 	waClient := state.State.WhatsAppClient
 
 	msgToSend := &waE2E.Message{}

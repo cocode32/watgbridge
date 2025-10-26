@@ -5,6 +5,10 @@ type DeprecatedOption struct {
 	Description string
 }
 
+// GetDeprecatedConfigOptions This method is here with an input for reference
+// currently not used but helpful for the future
+//
+//goland:noinspection ALL
 func GetDeprecatedConfigOptions(cfg *Config) []DeprecatedOption {
 
 	// below is an example of a deprecated setting. This code can be used in the future if settings are deprecated
