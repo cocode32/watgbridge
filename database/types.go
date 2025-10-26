@@ -25,6 +25,7 @@ type MsgIdPair struct {
 	WaMessageId string `gorm:"primaryKey;"` // Message ID
 	WaSenderJid string // Sender JID
 	WaChatJid   string // Chat JID
+	WaIsRead    bool   // keep track of messages we sent to whatsapp to mark as read
 
 	// Telegram
 	TgThreadId  int64

@@ -65,48 +65,35 @@ func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId s
 	return bridgePair.WaMessageId, bridgePair.WaSenderJid, bridgePair.WaChatJid, res.Error
 }
 
-//func MsgIdGetUnread(waChatId string) (map[string][]string, error) {
-//
-//	db := state.State.Database
-//
-//	var bridgePairs []MsgIdPair
-//	// TODO - fix this
-//	res := db.Where("wa_chat_id = ? AND mark_read = false", waChatId).Find(&bridgePairs)
-//
-//	var msgIds = make(map[string][]string)
-//
-//	for _, pair := range bridgePairs {
-//		if _, found := msgIds[pair.WaSenderJid]; !found {
-//			msgIds[pair.WaSenderJid] = []string{}
-//		}
-//		msgIds[pair.WaSenderJid] = append(msgIds[pair.WaSenderJid], pair.WaMessageId)
-//	}
-//
-//	return msgIds, res.Error
-//}
+func MsgIdGetUnreadWa(waChatId types.JID) ([]MsgIdPair, error) {
+	db := state.State.Database
 
-// TODO make use of this function
-//func MsgIdMarkRead(waChatId, waMsgId string) error {
-//
-//	db := state.State.Database
-//
-//	var bridgePair MsgIdPair
-//	res := db.Where(&MsgIdPair{
-//		WaMessageId: waMsgId,
-//		WaChatJid: waChatId,
-//	}).Find(&bridgePair)
-//	if res.Error != nil {
-//		return res.Error
-//	}
-//
-//	if bridgePair.ID == waMsgId {
-//		bridgePair.MarkRead = sql.NullBool{Valid: true, Bool: true}
-//		res = db.Save(&bridgePair)
-//		return res.Error
-//	}
-//
-//	return nil
-//}
+	var bridgePairs []MsgIdPair
+	res := db.Where(&MsgIdPair{
+		WaChatJid: GetDatabaseJid(waChatId),
+		WaIsRead:  false,
+	}).Find(&bridgePairs)
+
+	return bridgePairs, res.Error
+}
+
+func MsgIdMarkReadWa(waChatId types.JID, waMsgId string) error {
+
+	db := state.State.Database
+
+	var bridgePair MsgIdPair
+	res := db.Where(&MsgIdPair{
+		WaMessageId: waMsgId,
+		WaChatJid:   GetDatabaseJid(waChatId),
+	}).First(&bridgePair)
+	if res.Error != nil {
+		return res.Error
+	}
+
+	bridgePair.WaIsRead = true
+	saveRes := db.Save(&bridgePair)
+	return saveRes.Error
+}
 
 func MsgIdDeletePair(tgMsgId int64) error {
 

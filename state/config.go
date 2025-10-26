@@ -18,21 +18,21 @@ type Config struct {
 	SilentDbLogs     bool   `yaml:"silent_db_logs"`
 
 	Telegram struct {
-		BotToken           string  `yaml:"bot_token"`
-		ApiUrl             string  `yaml:"api_url"`
-		SudoUsersID        []int64 `yaml:"sudo_users_id"`
-		OwnerID            int64   `yaml:"owner_id"`
-		TargetChatID       int64   `yaml:"target_chat_id"`
-		SelfHostedAPI      bool    `yaml:"self_hosted_api"`
-		SkipVideoStickers  bool    `yaml:"skip_video_stickers"`
-		RemoveBotCommands  bool    `yaml:"remove_bot_commands"`
-		SendMyPresence     bool    `yaml:"send_my_presence"`
-		SendMyReadReceipts bool    `yaml:"send_my_read_receipts"`
-		SilentConfirmation bool    `yaml:"silent_confirmation"`
-		ConfirmationType   string  `yaml:"confirmation_type"`
-		SkipStartupMessage bool    `yaml:"skip_startup_message"`
-		SpoilerViewOnce    bool    `yaml:"spoiler_as_viewonce"`
-		Reactions          bool    `yaml:"reactions"`
+		BotToken                string  `yaml:"bot_token"`
+		ApiUrl                  string  `yaml:"api_url"`
+		SudoUsersID             []int64 `yaml:"sudo_users_id"`
+		OwnerID                 int64   `yaml:"owner_id"`
+		TargetChatID            int64   `yaml:"target_chat_id"`
+		SelfHostedAPI           bool    `yaml:"self_hosted_api"`
+		SkipVideoStickers       bool    `yaml:"skip_video_stickers"`
+		RemoveBotCommands       bool    `yaml:"remove_bot_commands"`
+		SendMyPresence          bool    `yaml:"send_my_presence"`
+		SendReadReceiptsOnReply bool    `yaml:"send_read_receipts_on_reply"`
+		SilentConfirmation      bool    `yaml:"silent_confirmation"`
+		ConfirmationType        string  `yaml:"confirmation_type"`
+		SkipStartupMessage      bool    `yaml:"skip_startup_message"`
+		SpoilerViewOnce         bool    `yaml:"spoiler_as_viewonce"`
+		Reactions               bool    `yaml:"reactions"`
 	} `yaml:"telegram"`
 
 	WhatsApp struct {

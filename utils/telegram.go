@@ -1038,33 +1038,39 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 	}
 
-	// TODO this is where the send receipts to whatsapp goes... So it's only happening when you send a message. Maybe it can change? 🤔
-	//if cfg.Telegram.SendMyReadReceipts {
-	//	unreadMsgs, err := database.MsgIdGetUnread(waChatJID.String())
-	//	if err != nil {
-	//		return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
-	//	}
-	//
-	//	for sender, msgIds := range unreadMsgs {
-	//		senderJID, _ := WaParseJID(sender)
-	//		err := waClient.MarkRead(msgIds, time.Now(), waChatJID, senderJID)
-	//		if err != nil {
-	//			logger.Warn(
-	//				"failed to mark messages as read",
-	//				zap.String("chat_id", waChatJID.String()),
-	//				zap.Any("msg_ids", msgIds),
-	//				zap.String("sender", senderJID.String()),
-	//			)
-	//		} else {
-	//			for _, msgId := range msgIds {
-	//				database.MsgIdMarkRead(waChatJID.String(), msgId)
-	//			}
-	//		}
-	//	}
-	//
-	//	// waClient.MarkRead(unreadMsgs, time.Now(), waChatJID, )
-	//}
-	//waClient.Mar
+	// reworked logic from original fork
+	if cfg.Telegram.SendReadReceiptsOnReply {
+		unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID)
+		if err != nil {
+			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
+		}
+
+		for _, idPair := range unreadMessages {
+			go func(pair database.MsgIdPair) {
+				senderJID, _ := waTypes.ParseJID(pair.WaSenderJid)
+				err := waClient.MarkRead([]waTypes.MessageID{pair.WaMessageId}, time.Now(), waChatJID, senderJID)
+				if err != nil {
+					logger.Warn(
+						"failed to mark messages as read on whatsapp",
+						zap.String("chat_jid", waChatJID.String()),
+						zap.Any("msg_id", pair.WaMessageId),
+						zap.String("sender_jid", senderJID.String()),
+					)
+				} else {
+					err = database.MsgIdMarkReadWa(waChatJID, idPair.WaMessageId)
+					if err != nil {
+						logger.Warn(
+							"failed to mark messages as read on in CocoWaTgBridge db",
+							zap.String("chat_jid", waChatJID.String()),
+							zap.Any("msg_id", pair.WaMessageId),
+							zap.String("sender_jid", senderJID.String()),
+							zap.String("message_id", pair.WaMessageId),
+						)
+					}
+				}
+			}(idPair)
+		}
+	}
 
 	return nil
 }
