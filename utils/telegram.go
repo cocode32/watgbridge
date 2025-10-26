@@ -230,7 +230,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		}
 	}
 
-	if cfg.Telegram.SendMyPresence {
+	if cfg.Telegram.SendMyPresenceOnReply {
 		err := waClient.SendPresence(waTypes.PresenceAvailable)
 		if err != nil {
 			logger.Warn("failed to send presence",

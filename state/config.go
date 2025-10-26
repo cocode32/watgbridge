@@ -26,7 +26,7 @@ type Config struct {
 		SelfHostedAPI           bool    `yaml:"self_hosted_api"`
 		SkipVideoStickers       bool    `yaml:"skip_video_stickers"`
 		RemoveBotCommands       bool    `yaml:"remove_bot_commands"`
-		SendMyPresence          bool    `yaml:"send_my_presence"`
+		SendMyPresenceOnReply   bool    `yaml:"send_my_presence_on_reply_on_reply"`
 		SendReadReceiptsOnReply bool    `yaml:"send_read_receipts_on_reply"`
 		SilentConfirmation      bool    `yaml:"silent_confirmation"`
 		ConfirmationType        string  `yaml:"confirmation_type"`
