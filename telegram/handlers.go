@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 	"watgbridge/whatsapp"
 
@@ -32,20 +33,37 @@ type waTgBridgeCommand struct {
 
 var commands []waTgBridgeCommand
 
+var userBotState sync.Map
+
 func isAuthedUserGroup(msg *gotgbot.Message) bool {
 	return msg.Chat.Id == state.State.Config.Telegram.TargetChatID
 }
 
 func isAuthedUser(msg *gotgbot.Message) bool {
-	return msg.From.Id == state.State.Config.Telegram.OwnerID
+	return msg.From.Id == state.State.Config.Telegram.OwnerID && !strings.HasPrefix(msg.Text, "/")
+}
+
+func getUserBotState(userId int64) BotConversationState {
+	if val, ok := userBotState.Load(userId); ok {
+		return val.(BotConversationState)
+	}
+	return BotConversationState{}
 }
 
 func onMessageHandler(b *gotgbot.Bot, c *ext.Context) error {
-	fmt.Println("running message handler")
 	//userID := c.EffectiveUser.Id
 	text := c.Message.Text
 
-	//b.SendMessage(c.EffectiveChat.Id, fmt.Sprintf("You said? %s", text), nil)
+	currentState := getUserBotState(c.EffectiveUser.Id)
+	switch currentState.Command {
+	case "":
+		_, _ = b.SendMessage(c.EffectiveChat.Id, "Hello there :)", nil)
+		return nil
+	case "help":
+		_, _ = b.SendMessage(c.EffectiveChat.Id, "How can I help?", nil)
+		return nil
+	}
+
 	utils.TgReplyTextByContext(b, c, fmt.Sprintf("You said? %s", text), nil, false)
 
 	//if stateVal, ok := userState.Load(userID); ok {
@@ -56,6 +74,16 @@ func onMessageHandler(b *gotgbot.Bot, c *ext.Context) error {
 	//	}
 	//}
 	return nil
+}
+
+func PromptGetProfilePictureHandler(b *gotgbot.Bot, c *ext.Context) error {
+	userId := c.EffectiveUser.Id
+	userBotState.Store(userId, &BotConversationState{
+		Command: "help",
+	})
+
+	_, err := b.SendMessage(c.EffectiveChat.Id, "Send me the WhatsApp ID (like 123456789@g.us):", nil)
+	return err
 }
 
 func AddTelegramHandlers() {
@@ -72,6 +100,9 @@ func AddTelegramHandlers() {
 		waTgBridgeCommand{
 			handlers.NewCommand("start", StartCommandHandler),
 			"",
+		},
+		waTgBridgeCommand{
+			handlers.NewCommand("wtf", PromptGetProfilePictureHandler), "test",
 		},
 		waTgBridgeCommand{
 			handlers.NewCommand("getwagroups", GetWhatsAppGroupsHandler),
