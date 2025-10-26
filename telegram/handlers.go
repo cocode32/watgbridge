@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"watgbridge/whatsapp"
 
 	"watgbridge/database"
 	"watgbridge/state"
@@ -317,21 +318,7 @@ func SyncContactsHandler(b *gotgbot.Bot, c *ext.Context) error {
 		return utils.TgReplyWithErrorByContext(b, c, "Failed to sync contacts", err)
 	}
 
-	contacts, err := waClient.Store.Contacts.GetAllContacts(context.Background())
-
-	// TODO this code is duplicated it needs to be cleaned
-	wrappedContacts := make(map[waTypes.JID]database.CocoContactInfo, len(contacts))
-	for jid, info := range contacts {
-		lid, _ := waClient.Store.LIDs.GetLIDForPN(context.Background(), jid.ToNonAD())
-		wrappedContacts[jid] = database.CocoContactInfo{
-			ContactInfo: &info,
-			Lid:         lid,
-		}
-	}
-
-	if err == nil {
-		err = database.ContactNameBulkAddOrUpdate(wrappedContacts)
-	}
+	err = whatsapp.SyncContactsWithBridge(waClient)
 	if err != nil {
 		_, err = utils.TgReplyTextByContext(b, c, "Something broke when we tried to insert the contacts into the database", nil, false)
 	}
