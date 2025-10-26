@@ -1040,35 +1040,33 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 	// reworked logic from original fork
 	if cfg.Telegram.SendReadReceiptsOnReply {
-		unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID)
+		unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
 		}
 
+		var messageIds []string
 		for _, idPair := range unreadMessages {
-			go func(pair database.MsgIdPair) {
-				senderJID, _ := waTypes.ParseJID(pair.WaSenderJid)
-				err := waClient.MarkRead([]waTypes.MessageID{pair.WaMessageId}, time.Now(), waChatJID, senderJID)
-				if err != nil {
-					logger.Warn(
-						"failed to mark messages as read on whatsapp",
-						zap.String("chat_jid", waChatJID.String()),
-						zap.Any("msg_id", pair.WaMessageId),
-						zap.String("sender_jid", senderJID.String()),
-					)
-				} else {
-					err = database.MsgIdMarkReadWa(waChatJID, idPair.WaMessageId)
-					if err != nil {
-						logger.Warn(
-							"failed to mark messages as read on in CocoWaTgBridge db",
-							zap.String("chat_jid", waChatJID.String()),
-							zap.Any("msg_id", pair.WaMessageId),
-							zap.String("sender_jid", senderJID.String()),
-							zap.String("message_id", pair.WaMessageId),
-						)
-					}
-				}
-			}(idPair)
+			messageIds = append(messageIds, idPair.WaMessageId)
+			senderJID, _ := waTypes.ParseJID(idPair.WaSenderJid)
+			err := waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, senderJID)
+			if err != nil {
+				logger.Warn(
+					"failed to mark messages as read on whatsapp",
+					zap.String("chat_jid", waChatJID.String()),
+					zap.Any("msg_id", idPair.WaMessageId),
+					zap.String("sender_jid", senderJID.String()),
+				)
+			}
+		}
+
+		err = database.MsgIdMarkReadWa(messageIds)
+		if err != nil {
+			logger.Warn(
+				"failed to mark messages as read on in CocoWaTgBridge db",
+				zap.String("chat_jid", waChatJID.String()),
+				zap.Any("msg_ids", messageIds),
+			)
 		}
 	}
 
