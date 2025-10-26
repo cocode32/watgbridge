@@ -34,3 +34,8 @@ watgbridge.service
 # Nix
 /result
 .direnv/
+
+# debian files
+.cache/
+.config/
+go/
