@@ -122,6 +122,16 @@ func TgReplyTextByContext(b *gotgbot.Bot, c *ext.Context, text string, buttons *
 	return msg, err
 }
 
+func TgSetReactionByContext(b *gotgbot.Bot, c *ext.Context, emoji string) error {
+	_, err := b.SetMessageReaction(
+		c.EffectiveChat.Id,
+		c.EffectiveMessage.MessageId,
+		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: emoji}}},
+	)
+
+	return err
+}
+
 func TgSendTextById(b *gotgbot.Bot, chatId int64, threadId int64, text string) error {
 	_, err := b.SendMessage(chatId, text, &gotgbot.SendMessageOpts{
 		MessageThreadId: threadId})
@@ -1054,6 +1064,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	//
 	//	// waClient.MarkRead(unreadMsgs, time.Now(), waChatJID, )
 	//}
+	//waClient.Mar
 
 	return nil
 }
@@ -1106,7 +1117,7 @@ func SendMessageConfirmation(
 		_, err := b.SetMessageReaction(
 			msgToForward.Chat.Id,
 			msgToForward.MessageId,
-			&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🙈"}}},
+			&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🤔"}}},
 		)
 		if err != nil {
 			logger.Debug("Failed to set message reaction for sent message confirmation. Error: ",

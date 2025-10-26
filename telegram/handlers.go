@@ -167,6 +167,7 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 		cocoContact, found := database.ChatThreadGetWaFromTg(c.EffectiveMessage.MessageThreadId)
 		if !found {
 			_, err = utils.TgReplyTextByContext(b, c, "No mapping found between current topic and a WhatsApp chat", nil, false)
+			utils.TgSetReactionByContext(b, c, "😡")
 			return err
 		}
 

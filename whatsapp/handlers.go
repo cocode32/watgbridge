@@ -1394,7 +1394,7 @@ func ReceiptEventHandler(v *events.Receipt) {
 		// nothing to do here, because we don't care about our messages
 		return
 	}
-	
+
 	var wg sync.WaitGroup
 	for _, waMessageId := range v.MessageIDs {
 		_, tgMsgId, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat.String())
@@ -1413,10 +1413,13 @@ func ReceiptEventHandler(v *events.Receipt) {
 			// need to check if the message is delivered or read
 			if v.Type == "" {
 				// the message was just delivered
-				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, tgMsgId, "🤝")
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, tgMsgId, "👍")
 			} else if v.Type == "read" {
 				// the message can be marked as read, because the receiver of your message has read receipts turned on
-				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, tgMsgId, "💯")
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, tgMsgId, "👀")
+			} else if v.Type == "played" {
+				// this is a voice message, and they have pressed play
+				utils.MarkMessageWithEmoji(tgBot, cfg.Telegram.TargetChatID, tgMsgId, "🙉")
 			}
 		}()
 	}
