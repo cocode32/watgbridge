@@ -8,7 +8,7 @@ import (
 	"go.mau.fi/whatsmeow/types"
 )
 
-func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgMsgId, tgThreadId int64) error {
+func MsgIdAddNewPair(waMsgId string, participantId types.JID, waChatId types.JID, tgMsgId, tgThreadId int64) error {
 	var (
 		db = state.State.Database
 	)
@@ -16,15 +16,15 @@ func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgMsgId, tgThreadI
 	var bridgePair MsgIdPair
 	res := db.Where(&MsgIdPair{
 		WaMessageId: waMsgId,
-		WaChatJid:   waChatId,
+		WaChatJid:   GetDatabaseJid(waChatId),
 	}).Find(&bridgePair)
 	if res.Error != nil {
 		return res.Error
 	}
 
 	if bridgePair.WaMessageId == waMsgId {
-		bridgePair.WaSenderJid = participantId
-		bridgePair.WaChatJid = waChatId
+		bridgePair.WaSenderJid = GetDatabaseJid(participantId)
+		bridgePair.WaChatJid = GetDatabaseJid(waChatId)
 		bridgePair.TgMessageId = tgMsgId
 		bridgePair.TgThreadId = tgThreadId
 		res = db.Save(&bridgePair)
@@ -33,8 +33,8 @@ func MsgIdAddNewPair(waMsgId, participantId, waChatId string, tgMsgId, tgThreadI
 	// else
 	res = db.Create(&MsgIdPair{
 		WaMessageId: waMsgId,
-		WaSenderJid: participantId,
-		WaChatJid:   waChatId,
+		WaSenderJid: GetDatabaseJid(participantId),
+		WaChatJid:   GetDatabaseJid(waChatId),
 		TgMessageId: tgMsgId,
 		TgThreadId:  tgThreadId,
 	})
