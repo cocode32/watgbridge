@@ -1099,19 +1099,29 @@ func SendMessageConfirmation(
 	msgToForward *gotgbot.Message,
 	revokeKeyboard *gotgbot.InlineKeyboardMarkup,
 ) {
+	logger := state.State.Logger
+
 	switch cfg.Telegram.ConfirmationType {
 	case "emoji":
-		b.SetMessageReaction(
+		_, err := b.SetMessageReaction(
 			msgToForward.Chat.Id,
 			msgToForward.MessageId,
 			&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🤨"}}},
 		)
+		if err != nil {
+			logger.Debug("Failed to set message reaction for sent message confirmation. Error: ",
+				zap.Error(err))
+		}
 	case "text":
 		msg, err := TgReplyTextByContext(b, c, "Successfully sent", revokeKeyboard, cfg.Telegram.SilentConfirmation)
 		if err == nil {
 			go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
 				time.Sleep(15 * time.Second)
-				_b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+				_, err = _b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+				if err != nil {
+					logger.Debug("Failed to remove successfully sent message for sent message confirmation. Error: ",
+						zap.Error(err))
+				}
 			}(b, msg)
 		}
 	}
@@ -1122,25 +1132,15 @@ func SendMessageDeliveredConfirmation(
 	targetChatId int64,
 	tgMessageId int64,
 ) {
-	b.SetMessageReaction(
+	logger := state.State.Logger
+
+	_, err := b.SetMessageReaction(
 		targetChatId,
 		tgMessageId,
 		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "🤝"}}},
 	)
-	//switch cfg.Telegram.ConfirmationType {
-	//case "emoji":
-	//	b.SetMessageReaction(
-	//		msgToForward.Chat.Id,
-	//		msgToForward.MessageId,
-	//		&gotgbot.SetMessageReactionOpts{Reaction: []gotgbot.ReactionType{gotgbot.ReactionTypeEmoji{Emoji: "✅"}}},
-	//	)
-	//case "text":
-	//	msg, err := TgReplyTextByContext(b, c, "Message delivered to device", nil, cfg.Telegram.SilentConfirmation)
-	//	if err == nil {
-	//		go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
-	//			time.Sleep(15 * time.Second)
-	//			_b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
-	//		}(b, msg)
-	//	}
-	//}
+	if err != nil {
+		logger.Debug("Failed to set message reaction for delivered confirmation. Error: ",
+			zap.Error(err))
+	}
 }
