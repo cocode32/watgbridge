@@ -20,6 +20,7 @@ import (
 	"github.com/PaulSonOfLars/gotgbot/v2/ext"
 	goVCard "github.com/emersion/go-vcard"
 	"github.com/forPelevin/gomoji"
+	"go.mau.fi/libsignal/logger"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waCommon"
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -1159,5 +1160,45 @@ func MarkMessageWithEmoji(
 	if err != nil {
 		logger.Debug("Failed to set message reaction for delivered confirmation. Error: ",
 			zap.Error(err))
+	}
+}
+
+func MarkMessageWithDeliveryStatus(b *gotgbot.Bot,
+	tgThreadId,
+	tgMessageId int64,
+	text string,
+	cfg *state.Config) {
+
+	// TODO use the config value to check if user wants read receipt information from whatsapp
+
+	sendOpts := &gotgbot.SendMessageOpts{
+		ReplyParameters: &gotgbot.ReplyParameters{
+			MessageId: tgMessageId,
+		},
+		MessageThreadId:     tgThreadId,
+		DisableNotification: true,
+	}
+	//msg, err := TgReplyTextByContext(b, c, "This message was successfully delivered (i.e. two ticks ✔️✔️", revokeKeyboard, cfg.Telegram.SilentConfirmation)
+	//if err == nil {
+	//	go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
+	//		time.Sleep(15 * time.Second)
+	//		_, err = _b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+	//		if err != nil {
+	//			logger.Debug("Failed to remove successfully sent message for sent message confirmation. Error: ",
+	//				zap.Error(err))
+	//		}
+	//	}(b, msg)
+	//}
+
+	msg, err := b.SendMessage(cfg.Telegram.TargetChatID, text, sendOpts)
+	if err == nil {
+		go func(_b *gotgbot.Bot, _m *gotgbot.Message) {
+			time.Sleep(30 * time.Second)
+			_, err = _b.DeleteMessage(_m.Chat.Id, _m.MessageId, &gotgbot.DeleteMessageOpts{})
+			if err != nil {
+				logger.Debug("Failed to remove receipt message information for receipt message confirmation. Error: ",
+					zap.Error(err))
+			}
+		}(b, msg)
 	}
 }

@@ -1395,7 +1395,7 @@ func ReceiptEventHandler(v *events.Receipt) {
 
 	// events of this type can come with many messages, so we want to react to all of them
 	for _, waMessageId := range v.MessageIDs {
-		_, tgMsgId, threadFound := database.MsgIdGetTgFromWa(waMessageId, v.MessageSource.Chat)
+		tgThreadMapId, tgMsgId, threadFound := database.MsgIdGetTgFromWa(waMessageId, v.MessageSource.Chat)
 		if !threadFound {
 			logger.Debug("No message was found to react to for the receipt of a message on whatsapp",
 				zap.String("message id", waMessageId),
@@ -1409,12 +1409,15 @@ func ReceiptEventHandler(v *events.Receipt) {
 			// need to check if the message is delivered or read
 			if recipientType == "" {
 				// the message was just delivered
+				utils.MarkMessageWithDeliveryStatus(bot, tgThreadMapId, msgId, "This message was successfully delivered (i.e. two ticks ✔️✔️", cfg)
 				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "👍")
 			} else if recipientType == "read" {
 				// the message can be marked as read, because the receiver of your message has read receipts turned on
+				utils.MarkMessageWithDeliveryStatus(bot, tgThreadMapId, msgId, "This message was successfully read (i.e. two BLUE ticks 🥏🥏", cfg)
 				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "👀")
 			} else if recipientType == "played" {
 				// this is a voice message, and they have pressed play
+				utils.MarkMessageWithDeliveryStatus(bot, tgThreadMapId, msgId, "This message was successfully listened to (i.e. it has blue ticks from a play 🎧", cfg)
 				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "🙉")
 			}
 		}(tgBot, cfg.Telegram.TargetChatID, tgMsgId, v.Type)
