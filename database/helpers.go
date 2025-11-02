@@ -40,7 +40,7 @@ func MsgIdAddNewPair(waMsgId string, participantId, waChatJid types.JID, tgMsgId
 	return res.Error
 }
 
-func MsgIdGetTgFromWa(waMsgId string, chatJid types.JID) (int64, int64, error) {
+func MsgIdGetTgFromWa(waMsgId string, chatJid types.JID) (int64, int64, bool, error) {
 	db := state.State.Database
 
 	waChatId := GetDatabaseJid(chatJid)
@@ -50,7 +50,7 @@ func MsgIdGetTgFromWa(waMsgId string, chatJid types.JID) (int64, int64, error) {
 		WaChatJid:   waChatId,
 	}).Find(&bridgePair)
 
-	return bridgePair.TgThreadId, bridgePair.TgMessageId, res.Error
+	return bridgePair.TgThreadId, bridgePair.TgMessageId, bridgePair.TgThreadId == 0, res.Error
 }
 
 func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId string, err error) {
