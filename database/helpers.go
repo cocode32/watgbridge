@@ -62,7 +62,7 @@ func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId s
 		TgThreadId:  tgThreadId,
 	}).Find(&bridgePair)
 
-	return bridgePair.WaMessageId, bridgePair.WaSenderJid, bridgePair.WaChatJid, res.Error
+	return bridgePair.WaMessageId, bridgePair.WaParticipantJid, bridgePair.WaChatJid, res.Error
 }
 
 func MsgIdGetUnreadWa(waChatId types.JID, senderJid types.JID) ([]MsgIdPair, error) {
