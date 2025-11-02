@@ -86,7 +86,11 @@ func PairSuccessHandler(event *events.PairSuccess) {
 				database.CreateCocoContact(event.ID, event.LID, "You")
 			}
 		}
+
+		return
 	}
+
+	_ = database.CocoContactUpdatePushName(event.ID, event.LID, "You")
 }
 
 func ConnectedHandler() {
