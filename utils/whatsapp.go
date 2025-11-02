@@ -131,13 +131,13 @@ func WaGetContactName(waId types.JID) string {
 			if err == nil && contact.Found {
 				name = firstNonEmpty(contact.FullName, contact.FirstName, contact.PushName, contact.BusinessName)
 				if name != "" {
-					name += " (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+					name += " (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().String()) + ")"
 				}
 			}
 		}
 
 		if name == "" {
-			name = "User Unknown (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+			name = "User Unknown (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().String()) + ")"
 		}
 
 		return name
