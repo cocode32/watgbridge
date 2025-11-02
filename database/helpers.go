@@ -49,7 +49,7 @@ func MsgIdGetTgFromWa(waMsgId string, chatJid types.JID) (int64, int64, bool) {
 		WaChatJid:   waChatId,
 	}).Find(&bridgePair)
 
-	return bridgePair.TgThreadId, bridgePair.TgMessageId, res.Error == nil
+	return bridgePair.TgThreadId, bridgePair.TgMessageId, bridgePair.TgMessageId != 0 && bridgePair.TgThreadId != 0 && res.Error == nil
 }
 
 func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId string, err error) {
@@ -235,7 +235,7 @@ func ChatThreadGetWaFromTg(tgThreadId int64) (CocoContact, bool) {
 		res = db.Where(&CocoContact{ID: chatPair.CocoContactId}).First(&cocoContact)
 	}
 
-	return cocoContact, res.Error == nil
+	return cocoContact, cocoContact.ID != 0
 }
 
 func ChatThreadGetAllPairs() ([]CocoChatThread, error) {
