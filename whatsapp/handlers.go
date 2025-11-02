@@ -24,7 +24,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var cocoInfoThreadUpdateJid, _ = waTypes.ParseJID("coco-info-update@broadcast")
+var cocoInfoThreadUpdateBroadcastJid, _ = waTypes.ParseJID("coco-info-update@broadcast")
+var mentionsBroadcastJid, _ = waTypes.ParseJID("mentions@broadcast")
+var statusBroadcastJid, _ = waTypes.ParseJID("status@broadcast")
+var callsBroadcastJid, _ = waTypes.ParseJID("calls@broadcast")
 
 func WhatsAppEventHandler(evt interface{}) {
 
@@ -274,8 +277,8 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 
 	if !isEdited {
 		// Return if duplicate event is emitted
-		_, _, _, err := database.MsgIdGetTgFromWa(msgId, v.Info.Chat)
-		if err != nil {
+		_, _, threadFound := database.MsgIdGetTgFromWa(msgId, v.Info.Chat)
+		if threadFound {
 			logger.Debug("returning because duplicate event id emitted",
 				zap.String("event_id", v.Info.ID),
 				zap.String("chat_jid", v.Info.Chat.String()),
@@ -291,7 +294,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		actualPnJid = v.Info.Chat.ToNonAD()
 	}
 
-	if v.Info.Chat.String() == "status@broadcast" &&
+	if v.Info.Chat == statusBroadcastJid &&
 		(cfg.WhatsApp.SkipStatus ||
 			slices.Contains(cfg.WhatsApp.StatusIgnoredChats, actualPnJid.User)) {
 		// Return if status is from ignored chat
@@ -323,16 +326,16 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 
 	var bridgedText string
 	if v.Info.IsFromMe {
-		bridgedText += "🙊: <b>You [other device]</b>\n"
+		bridgedText += "🙈: <b>You <i>[other device]</i></b>\n"
 	} else {
 		if !cfg.WhatsApp.SkipChatDetails {
-			bridgedText += fmt.Sprintf("🧑: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
+			bridgedText += fmt.Sprintf("🤓: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
 		}
 	}
 	if v.Info.IsIncomingBroadcast() {
 		bridgedText += "📢: <b>(Broadcast)</b>\n"
 	} else if v.Info.IsGroup {
-		bridgedText += fmt.Sprintf("👫: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
+		bridgedText += fmt.Sprintf("🧐: <b>%s</b>\n", html.EscapeString(utils.WaGetContactName(v.Info.MessageSource.Sender)))
 	} else if !cfg.WhatsApp.SkipChatDetails {
 		bridgedText += "🪪: <b>(PVT)</b>\n"
 	}
@@ -355,7 +358,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 	)
 
 	if isEdited {
-		threadId, replyToMsgId, threadIdFound, _ = database.MsgIdGetTgFromWa(
+		threadId, replyToMsgId, threadIdFound = database.MsgIdGetTgFromWa(
 			v.Message.GetProtocolMessage().GetKey().GetID(),
 			v.Info.Chat,
 		)
@@ -459,10 +462,9 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 						tagInfoText := "#mentions\n\n" + bridgedText + fmt.Sprintf("\n<i>You were tagged in %s</i>",
 							html.EscapeString(utils.WaGetGroupName(v.Info.Chat)))
 
-						mentionsJid, _ := waTypes.ParseJID("mentions@broadcast")
-						threadId, isNewThread, err = utils.TgGetOrMakeThreadFromWa(mentionsJid, "Mentions", "Mentions")
+						threadId, isNewThread, err = utils.TgGetOrMakeThreadFromWa(mentionsBroadcastJid, "Mentions", "Mentions")
 						if err != nil {
-							utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "failed to create/find thread id for 'mentions'", err)
+							utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, threadId, "failed to create/find thread id for 'mentions'", err)
 						} else {
 							tgBot.SendMessage(cfg.Telegram.TargetChatID, tagInfoText, &gotgbot.SendMessageOpts{
 								MessageThreadId: threadId,
@@ -479,7 +481,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				zap.String("event_id", v.Info.ID),
 			)
 			stanzaId := contextInfo.GetStanzaID()
-			threadId, replyToMsgId, threadIdFound, _ = database.MsgIdGetTgFromWa(stanzaId, v.Info.Chat)
+			threadId, replyToMsgId, threadIdFound = database.MsgIdGetTgFromWa(stanzaId, v.Info.Chat)
 		}
 	}
 
@@ -488,23 +490,23 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 	}
 
 	if !threadIdFound {
-		if v.Info.Chat.String() == "status@broadcast" {
+		if v.Info.Chat == statusBroadcastJid {
 			threadId, _, err = utils.TgGetOrMakeThreadFromWa(v.Info.Chat, "Status Post", "Status")
 			if err != nil {
-				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "failed to create/find thread id for 'status@broadcast'", err)
+				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, threadId, "failed to create/find thread id for 'status@broadcast'", err)
 				return
 			}
 		} else if v.Info.IsIncomingBroadcast() {
 			threadId, _, err = utils.TgGetOrMakeThreadFromWa(v.Info.MessageSource.Sender.ToNonAD(), utils.WaGetContactName(v.Info.MessageSource.Sender), "")
 			if err != nil {
-				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, fmt.Sprintf("failed to create/find thread id for '%s'",
+				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, threadId, fmt.Sprintf("failed to create/find thread id for '%s'",
 					v.Info.MessageSource.Sender.ToNonAD().String()), err)
 				return
 			}
 		} else if v.Info.IsGroup {
 			threadId, isNewThread, err = utils.TgGetOrMakeThreadFromWa(v.Info.Chat, utils.WaGetGroupName(v.Info.Chat), "")
 			if err != nil {
-				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, fmt.Sprintf("failed to create/find thread id for '%s'",
+				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, threadId, fmt.Sprintf("failed to create/find thread id for '%s'",
 					v.Info.Chat.String()), err)
 				return
 			}
@@ -557,7 +559,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 		} else {
 			threadId, isNewThread, err = utils.TgGetOrMakeThreadFromWa(v.Info.Chat, utils.WaGetContactName(v.Info.Chat), "")
 			if err != nil {
-				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, fmt.Sprintf("failed to create/find thread id for '%s'",
+				utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, threadId, fmt.Sprintf("failed to create/find thread id for '%s'",
 					v.Info.Chat.ToNonAD().User), err)
 				return
 			}
@@ -1278,11 +1280,10 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 	} else {
 		if text == "" {
 			if reactionMsg := v.Message.GetReactionMessage(); cfg.Telegram.Reactions && reactionMsg != nil {
-				_, tgMsgId, threadFound, err := database.MsgIdGetTgFromWa(reactionMsg.Key.GetID(), v.Info.Chat)
-				if err != nil || !threadFound {
+				threadId, tgMsgId, threadFound := database.MsgIdGetTgFromWa(reactionMsg.Key.GetID(), v.Info.Chat)
+				if !threadFound {
 					logger.Error(
 						"failed to get message ID mapping from database",
-						zap.Error(err),
 						zap.String("stanza_id", reactionMsg.Key.GetID()),
 						zap.String("chat_id", v.Info.Chat.String()),
 					)
@@ -1362,8 +1363,7 @@ func CallOfferEventHandler(v *events.CallOffer) {
 	// TODO : Check and handle group calls
 	callerName := utils.WaGetContactName(v.From)
 
-	callsJid, _ := waTypes.ParseJID("calls@broadcast")
-	callThreadId, _, err := utils.TgGetOrMakeThreadFromWa(callsJid, "Calls", "Calls")
+	callThreadId, _, err := utils.TgGetOrMakeThreadFromWa(callsBroadcastJid, "Calls", "Calls")
 	if err != nil {
 		utils.TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retrieve corresponding thread id for calls", err)
 		return
@@ -1383,14 +1383,9 @@ func ReceiptEventHandler(v *events.Receipt) {
 	)
 
 	// events of this type can come with many messages, so we want to react to all of them
-	if v.IsFromMe {
-		// nothing to do here, because we don't care about our messages
-		return
-	}
-
 	for _, waMessageId := range v.MessageIDs {
-		_, tgMsgId, threadFound, err := database.MsgIdGetTgFromWa(waMessageId, v.Chat)
-		if err != nil || !threadFound {
+		_, tgMsgId, threadFound := database.MsgIdGetTgFromWa(waMessageId, v.MessageSource.Chat)
+		if !threadFound {
 			logger.Debug("No message was found to react to for the receipt of a message on whatsapp",
 				zap.String("message id", waMessageId),
 				zap.String("chat id", v.Chat.String()),
@@ -1399,25 +1394,19 @@ func ReceiptEventHandler(v *events.Receipt) {
 			continue
 		}
 
-		go func(bot *gotgbot.Bot, targetChatId int64, msgId int64) {
+		go func(bot *gotgbot.Bot, targetChatId, msgId int64, recipientType waTypes.ReceiptType) {
 			// need to check if the message is delivered or read
-			if v.Type == "" {
-				// wait a little, because the delivered message and received message might be right after each other
-				time.Sleep(2 * time.Second)
+			if recipientType == "" {
 				// the message was just delivered
 				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "👍")
-			} else if v.Type == "read" {
-				// wait a little, because the delivered message and received message might be right after each other
-				time.Sleep(4 * time.Second)
+			} else if recipientType == "read" {
 				// the message can be marked as read, because the receiver of your message has read receipts turned on
 				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "👀")
-			} else if v.Type == "played" {
-				// wait a little, because the delivered message and received message might be right after each other
-				time.Sleep(6 * time.Second)
+			} else if recipientType == "played" {
 				// this is a voice message, and they have pressed play
 				utils.MarkMessageWithEmoji(bot, targetChatId, msgId, "🙉")
 			}
-		}(tgBot, cfg.Telegram.TargetChatID, tgMsgId)
+		}(tgBot, cfg.Telegram.TargetChatID, tgMsgId, v.Type)
 	}
 }
 
@@ -1503,7 +1492,7 @@ func SendUserAboutMessageUpdateToInfoThread(v *events.UserAbout, cfg *state.Conf
 		if override {
 			updateMessageText += "<b>User About Override/No Thread Found</b> \n\n"
 		}
-		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(cocoInfoThreadUpdateJid, "Info Updates", "Info Updates")
+		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(cocoInfoThreadUpdateBroadcastJid, "Info Updates", "Info Updates")
 		if err != nil {
 			logger.Warn(
 				"failed to create a new thread for a WhatsApp chat (handling UserAbout event)",
@@ -1561,12 +1550,12 @@ func RevokedMessageEventHandler(v *events.Message) {
 		deleterName = utils.WaGetContactName(deleter)
 	}
 
-	tgThreadId, tgMsgId, found, err := database.MsgIdGetTgFromWa(waMsgId, waChatId)
-	if err != nil || tgThreadId == 0 || tgMsgId == 0 || !found {
+	tgThreadId, tgMsgId, found := database.MsgIdGetTgFromWa(waMsgId, waChatId)
+	if tgThreadId == 0 || tgMsgId == 0 || !found {
 		return
 	}
 
-	tgBot.SendMessage(cfg.Telegram.TargetChatID, fmt.Sprintf(
+	_, _ = tgBot.SendMessage(cfg.Telegram.TargetChatID, fmt.Sprintf(
 		"<i>This message was revoked by %s</i>",
 		html.EscapeString(deleterName),
 	), &gotgbot.SendMessageOpts{
@@ -1708,7 +1697,7 @@ func SendPictureToInfoUpdatesThread(v *events.Picture, cfg *state.Config, logger
 		if override {
 			updateText += "<b>User/Group not found</b>\nUser's thread was not found, so we sent it here instead\n\n"
 		}
-		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(cocoInfoThreadUpdateJid, "Info Updates", "Info Updates")
+		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(cocoInfoThreadUpdateBroadcastJid, "Info Updates", "Info Updates")
 		if err != nil {
 			logger.Warn(
 				"failed to create a new thread for a WhatsApp chat (handling Picture event)",
@@ -1781,7 +1770,7 @@ func GroupInfoEventHandler(v *events.GroupInfo) {
 
 	// just send to a default thread for these updates
 	if cfg.WhatsApp.CreateThreadForInfoUpdates {
-		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(cocoInfoThreadUpdateJid, "Info Updates", "Info Updates")
+		tgThreadId, _, err := utils.TgGetOrMakeThreadFromWa(cocoInfoThreadUpdateBroadcastJid, "Info Updates", "Info Updates")
 		if err != nil {
 			logger.Warn(
 				"failed to create a new thread for a WhatsApp chat (handling GroupInfo event)",
