@@ -110,7 +110,7 @@ func WaGetGroupName(jid types.JID) string {
 }
 
 func WaGetContactName(waId types.JID) string {
-	cocoContact, found := database.FindCocoContactSingleId(waId)
+	cocoContact, found := database.FindCocoContactByWhatsmeow(waId)
 	if !found {
 		jid := waId
 		if jid.ToNonAD() == state.State.WhatsAppClient.Store.ID.ToNonAD() {

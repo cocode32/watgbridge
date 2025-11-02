@@ -72,11 +72,11 @@ func PairSuccessHandler(event *events.PairSuccess) {
 	_, found := database.FindCocoContact(event.ID, event.LID)
 	if !found {
 		// make sure we don't exist with just one id
-		contactJid, foundJid := database.FindCocoContactSingleId(event.ID)
+		contactJid, foundJid := database.FindCocoContactByWhatsmeow(event.ID)
 		if foundJid {
 			database.CocoContactUpdateLid(contactJid.ID, event.LID)
 		} else {
-			contactLid, foundLid := database.FindCocoContactSingleId(event.LID)
+			contactLid, foundLid := database.FindCocoContactByWhatsmeow(event.LID)
 			if foundLid {
 				database.CocoContactUpdateLid(contactLid.ID, event.ID)
 			} else {
@@ -215,16 +215,17 @@ func HistorySyncHandler(event *events.HistorySync) {
 		for _, mapping := range event.Data.PhoneNumberToLidMappings {
 			jid, _ := waTypes.ParseJID(*mapping.PnJID)
 			lid, _ := waTypes.ParseJID(*mapping.LidJID)
-			jidContact, foundJid := database.FindCocoContactSingleId(jid)
+			jidContact, foundJid := database.FindCocoContactByWhatsmeow(jid)
 			if !foundJid {
-				lidContact, foundLid := database.FindCocoContactSingleId(lid)
+				lidContact, foundLid := database.FindCocoContactByWhatsmeow(lid)
 				if !foundLid {
-					database.CreateCocoContact(jid, lid, "HistorySyncHandler")
+					// rather leave this name as empty
+					database.CreateCocoContact(jid, lid, "")
 				} else {
-					database.CocoContactUpdateJid(lidContact.ID, jid)
+					_ = database.CocoContactUpdateJid(lidContact.ID, jid)
 				}
 			} else {
-				database.CocoContactUpdateLid(jidContact.ID, lid)
+				_ = database.CocoContactUpdateLid(jidContact.ID, lid)
 			}
 		}
 	}

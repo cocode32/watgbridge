@@ -129,7 +129,7 @@ func AddNewChatThread(waChatId types.JID, tgThreadId int64) error {
 		return res.Error
 	}
 
-	cocoContact, found := FindCocoContactSingleId(waChatId)
+	cocoContact, found := FindCocoContactByWhatsmeow(waChatId)
 	if !found {
 		// unknown contact, just create one to make the thread
 		_, lid := GetJidOrLid(waChatId)
@@ -164,7 +164,7 @@ func AddNewChatThreadWithPush(waChatId types.JID, tgThreadId int64, pushName str
 		return errors.Join(threadRes.Error, contactRes.Error)
 	}
 
-	cocoContact, found = FindCocoContactSingleId(waChatId)
+	cocoContact, found = FindCocoContactByWhatsmeow(waChatId)
 	if !found {
 		// unknown contact, just create one to make the thread
 		_, lid := GetJidOrLid(waChatId)
@@ -191,7 +191,7 @@ func GetChatThread(waChatId types.JID) (CocoChatThread, bool) {
 	db := state.State.Database
 
 	var chatThread CocoChatThread
-	cocoContact, found := FindCocoContactSingleId(waChatId)
+	cocoContact, found := FindCocoContactByWhatsmeow(waChatId)
 
 	if !found {
 		return chatThread, false
@@ -256,9 +256,9 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 		jid := GetDatabaseJid(k)
 		lid := GetDatabaseJid(manualContactData.Lid)
 
-		jidContact, found := FindCocoContactSingleId(k)
+		jidContact, found := FindCocoContactByWhatsmeow(k)
 		if !found {
-			lidContact, foundLid := FindCocoContactSingleId(manualContactData.Lid)
+			lidContact, foundLid := FindCocoContactByWhatsmeow(manualContactData.Lid)
 			if !foundLid {
 				newContacts = append(newContacts, CocoContact{
 					Jid:          jid,
@@ -317,7 +317,7 @@ func ContactNameBulkAddOrUpdate(contacts map[types.JID]CocoContactInfo) error {
 }
 
 func ContactNameGet(waUserId types.JID) (string, string, string, string, string, error) {
-	contact, found := FindCocoContactSingleId(waUserId)
+	contact, found := FindCocoContactByWhatsmeow(waUserId)
 
 	if !found {
 		return "", "", "", "", "", errors.New("contact not found")
@@ -470,7 +470,7 @@ func CreateCocoContact(jid types.JID, lid types.JID, name string) (CocoContact, 
 	return userContact, result.Error == nil
 }
 
-func FindCocoContactSingleId(idFromWhatsmeow types.JID) (CocoContact, bool) {
+func FindCocoContactByWhatsmeow(idFromWhatsmeow types.JID) (CocoContact, bool) {
 	db := state.State.Database
 
 	var userContact CocoContact
