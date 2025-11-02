@@ -68,10 +68,8 @@ func MsgIdPairGetChatUnread(waChatId types.JID) ([]MsgIdPair, error) {
 	db := state.State.Database
 
 	var bridgePairs []MsgIdPair
-	res := db.Where(&MsgIdPair{
-		WaChatJid: GetDatabaseJid(waChatId),
-		WaIsRead:  false,
-	}).Find(&bridgePairs)
+	res := db.Where("wa_chat_jid = ? AND wa_is_read = ?", GetDatabaseJid(waChatId), false).
+		Find(&bridgePairs)
 
 	return bridgePairs, res.Error
 }
