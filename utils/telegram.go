@@ -1041,42 +1041,47 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	// reworked logic from original fork
 	var messageIds []string
 	if cfg.Telegram.SendReadReceiptsOnReply {
-		// TODO come back and fix this - this can go out the loop
-		unreadMessages, err := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
-		lidUnread, err := database.MsgIdGetUnreadWa(waChatJID, waClient.Store.LID)
+		unreadMessages, mainUnreadError := database.MsgIdGetUnreadWa(waChatJID, *waClient.Store.ID)
+		lidUnread, lidUnreadError := database.MsgIdGetUnreadWa(waChatJID, waClient.Store.LID)
 		allUnread := append(unreadMessages, lidUnread...)
 
-		if err != nil {
-			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
+		if mainUnreadError != nil || lidUnreadError != nil {
+			_ = TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", errors.Join(mainUnreadError, lidUnreadError))
 		}
 
 		for _, idPair := range allUnread {
 			messageIds = append(messageIds, idPair.WaMessageId)
-			senderJID, _ := waTypes.ParseJID(idPair.WaParticipantJid)
-			err = waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, senderJID)
+			err = waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, *waClient.Store.ID)
 			if err != nil {
 				logger.Warn(
 					"failed to mark messages as read on whatsapp",
 					zap.String("chat_jid", waChatJID.String()),
 					zap.Any("msg_id", idPair.WaMessageId),
-					zap.String("sender_jid", senderJID.String()),
+					zap.String("sender_jid", waClient.Store.ID.String()),
 				)
 			}
 		}
 
 		err = database.MsgIdMarkReadWa(messageIds)
+
+		if err != nil {
+			logger.Warn(
+				"failed to mark messages as read on in CocoWaTgBridge db",
+				zap.String("chat_jid", waChatJID.String()),
+				zap.Any("msg_ids", messageIds),
+			)
+		}
+	} else {
+		err = database.MsgIdMarkReadWaAsFalse(messageIds)
+
+		if err != nil {
+			logger.Warn(
+				"failed to mark messages as read on in CocoWaTgBridge db",
+				zap.String("chat_jid", waChatJID.String()),
+				zap.Any("msg_ids", messageIds),
+			)
+		}
 	}
-	// TODO come back and fix this
-	//} else {
-	//	err = database.MsgIdMarkReadWaAsFalse(messageIds)
-	//}
-	//if err != nil {
-	//	logger.Warn(
-	//		"failed to mark messages as read on in CocoWaTgBridge db",
-	//		zap.String("chat_jid", waChatJID.String()),
-	//		zap.Any("msg_ids", messageIds),
-	//	)
-	//}
 
 	return nil
 }

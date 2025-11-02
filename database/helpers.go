@@ -65,15 +65,13 @@ func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId s
 	return bridgePair.WaMessageId, bridgePair.WaParticipantJid, bridgePair.WaChatJid, res.Error
 }
 
-// MsgIdGetUnreadWa not working yet
-// TODO need to fix this still
-func MsgIdGetUnreadWa(waChatId, senderJid types.JID) ([]MsgIdPair, error) {
+func MsgIdGetUnreadWa(waChatId, participantJid types.JID) ([]MsgIdPair, error) {
 	db := state.State.Database
 
 	var bridgePairs []MsgIdPair
 	res := db.Where(&MsgIdPair{
 		WaChatJid:        GetDatabaseJid(waChatId),
-		WaParticipantJid: GetDatabaseJid(senderJid),
+		WaParticipantJid: GetDatabaseJid(participantJid),
 		WaIsRead:         sql.NullBool{Bool: false, Valid: true},
 	}).Find(&bridgePairs)
 
