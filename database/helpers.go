@@ -456,12 +456,12 @@ func FindCocoContact(jid, lid types.JID) (CocoContact, bool) {
 	return userContact, result.Error == nil
 }
 
-func CreateCocoContact(jid types.JID, lid types.JID, name string) (CocoContact, bool) {
+func CreateCocoContact(jid, lid types.JID, name string) (CocoContact, bool) {
 	db := state.State.Database
 
 	var pushName = name
 	if pushName == "" {
-		pushName = jid.User
+		pushName = jid.ToNonAD().User
 	}
 
 	userContact := CocoContact{
