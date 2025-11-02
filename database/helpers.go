@@ -339,16 +339,20 @@ func ContactGetAll() (map[int]CocoContact, error) {
 	return results, res.Error
 }
 
-func CocoContactUpdatePushName(senderId types.JID, senderAltId types.JID, pushName string) error {
+func CocoContactUpdatePushName(senderId, senderAltId types.JID, pushName string) error {
 	if pushName == "" {
 		return nil
 	}
 
 	db := state.State.Database
 
-	contact, found := FindCocoContact(senderId, senderAltId)
+	contact, found := FindCocoContactByWhatsmeow(senderId)
 	if !found {
-		return nil
+		contact, found = FindCocoContactByWhatsmeow(senderAltId)
+	}
+
+	if !found {
+		return errors.New("contact not found")
 	}
 
 	contact.PushName = pushName
