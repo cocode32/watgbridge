@@ -40,9 +40,10 @@ func MsgIdAddNewPair(waMsgId string, participantId, waChatJid types.JID, tgMsgId
 	return res.Error
 }
 
-func MsgIdGetTgFromWa(waMsgId, waChatId string) (int64, int64, error) {
+func MsgIdGetTgFromWa(waMsgId string, chatJid types.JID) (int64, int64, error) {
 	db := state.State.Database
 
+	waChatId := GetDatabaseJid(chatJid)
 	var bridgePair MsgIdPair
 	res := db.Where(&MsgIdPair{
 		WaMessageId: waMsgId,
