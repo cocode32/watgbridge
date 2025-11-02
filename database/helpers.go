@@ -173,7 +173,7 @@ func AddNewChatThreadWithPush(waChatId types.JID, tgThreadId int64, pushName str
 		} else {
 			cocoContact, _ = CreateCocoContactLid(waChatId)
 		}
-		if pushName != "" {
+		if pushName != "" && cocoContact.PushName == "" {
 			cocoContact.PushName = pushName
 		}
 
