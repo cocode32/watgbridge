@@ -175,6 +175,7 @@ func HandleWhatsAppMessage(event *events.Message) {
 		return
 	}
 
+	// TODO I need to figure out what ephemeral messages are
 	if protoMsg := event.Message.GetProtocolMessage(); protoMsg != nil &&
 		protoMsg.GetType() == waE2E.ProtocolMessage_EPHEMERAL_SETTING {
 		if protoMsg.GetEphemeralExpiration() == 0 {
@@ -187,19 +188,17 @@ func HandleWhatsAppMessage(event *events.Message) {
 	}
 
 	text := ""
+	var msg *waE2E.Message
 	if isEdited {
-		msg := event.Message.GetProtocolMessage().GetEditedMessage()
-		if extendedMessageText := msg.GetExtendedTextMessage().GetText(); extendedMessageText != "" {
-			text = extendedMessageText
-		} else {
-			text = msg.GetConversation()
-		}
+		msg = event.Message.GetProtocolMessage().GetEditedMessage()
 	} else {
-		if extendedMessageText := event.Message.GetExtendedTextMessage().GetText(); extendedMessageText != "" {
-			text = extendedMessageText
-		} else {
-			text = event.Message.GetConversation()
-		}
+		msg = event.Message
+	}
+
+	if extendedMessageText := msg.GetExtendedTextMessage().GetText(); extendedMessageText != "" {
+		text = extendedMessageText
+	} else {
+		text = msg.GetConversation()
 	}
 
 	if event.Info.IsFromMe {
