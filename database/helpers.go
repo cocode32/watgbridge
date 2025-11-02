@@ -355,19 +355,24 @@ func CocoContactUpdatePushName(senderId, senderAltId types.JID, pushName string)
 
 	db := state.State.Database
 
-	contact, found := FindCocoContactByWhatsmeow(senderId)
-	if !found {
-		contact, found = FindCocoContactByWhatsmeow(senderAltId)
+	var userContact CocoContact
+	var result = db.Where(&CocoContact{
+		Jid: GetDatabaseJid(senderId),
+	}).Or(&CocoContact{
+		Lid: GetDatabaseJid(senderAltId),
+	}).Or(&CocoContact{
+		Jid: GetDatabaseJid(senderAltId),
+	}).Or(&CocoContact{
+		Lid: GetDatabaseJid(senderId),
+	}).First(&userContact)
+
+	if result.Error == nil {
+		userContact.PushName = pushName
+		res := db.Save(&userContact)
+
+		return res.Error
 	}
-
-	if !found {
-		return errors.New("contact not found")
-	}
-
-	contact.PushName = pushName
-	var res = db.Save(&contact)
-
-	return res.Error
+	return nil
 }
 
 func CocoContactUpdateJid(cocoId int32, id types.JID) error {

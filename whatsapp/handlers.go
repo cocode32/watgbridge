@@ -70,27 +70,28 @@ func WhatsAppEventHandler(evt interface{}) {
 }
 
 func PairSuccessHandler(event *events.PairSuccess) {
-	// save me into the database
-	_, found := database.FindCocoContact(event.ID, event.LID)
-	if !found {
-		// make sure we don't exist with just one id
-		contactJid, foundJid := database.FindCocoContactByWhatsmeow(event.ID)
-		if foundJid {
-			_ = database.CocoContactUpdateLid(contactJid.ID, event.LID)
-		} else {
-			contactLid, foundLid := database.FindCocoContactByWhatsmeow(event.LID)
-			if foundLid {
-				_ = database.CocoContactUpdateLid(contactLid.ID, event.ID)
-			} else {
-				// nothing exists, we should create ourselves
-				database.CreateCocoContact(event.ID, event.LID, "You")
-			}
-		}
-
-		return
-	}
-
-	_ = database.CocoContactUpdatePushName(event.ID, event.LID, "You")
+	// TODO - nothing is done here for now
+	//// save me into the database
+	//_, found := database.FindCocoContact(event.ID, event.LID)
+	//if !found {
+	//	// make sure we don't exist with just one id
+	//	contactJid, foundJid := database.FindCocoContactByWhatsmeow(event.ID)
+	//	if foundJid {
+	//		_ = database.CocoContactUpdateLid(contactJid.ID, event.LID)
+	//	} else {
+	//		contactLid, foundLid := database.FindCocoContactByWhatsmeow(event.LID)
+	//		if foundLid {
+	//			_ = database.CocoContactUpdateLid(contactLid.ID, event.ID)
+	//		} else {
+	//			// nothing exists, we should create ourselves
+	//			database.CreateCocoContact(event.ID, event.LID, "You")
+	//		}
+	//	}
+	//
+	//	return
+	//}
+	//
+	//_ = database.CocoContactUpdatePushName(event.ID, event.LID, "You")
 }
 
 func ConnectedHandler() {
