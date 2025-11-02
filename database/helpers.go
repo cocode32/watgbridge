@@ -444,7 +444,7 @@ func FindCocoContactById(id int32) (CocoContact, bool) {
 	return userContact, result.Error == nil
 }
 
-func FindCocoContact(jid types.JID, lid types.JID) (CocoContact, bool) {
+func FindCocoContact(jid, lid types.JID) (CocoContact, bool) {
 	db := state.State.Database
 
 	var userContact CocoContact
