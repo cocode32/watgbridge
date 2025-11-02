@@ -9,7 +9,7 @@ import (
 	"go.mau.fi/whatsmeow/types"
 )
 
-func MsgIdAddNewPair(waMsgId string, participantId types.JID, waChatId types.JID, tgMsgId, tgThreadId int64) error {
+func MsgIdAddNewPair(waMsgId string, participantId, waChatJid types.JID, tgMsgId, tgThreadId int64) error {
 	var (
 		db = state.State.Database
 	)
@@ -17,28 +17,26 @@ func MsgIdAddNewPair(waMsgId string, participantId types.JID, waChatId types.JID
 	var bridgePair MsgIdPair
 	res := db.Where(&MsgIdPair{
 		WaMessageId: waMsgId,
-		WaChatJid:   GetDatabaseJid(waChatId),
 	}).Find(&bridgePair)
-	if res.Error != nil {
-		return res.Error
+	if res.Error == nil {
+		// is existing
+		if bridgePair.WaMessageId == waMsgId {
+			bridgePair.WaParticipantJid = GetDatabaseJid(participantId)
+			bridgePair.WaChatJid = GetDatabaseJid(waChatJid)
+			bridgePair.TgMessageId = tgMsgId
+			bridgePair.TgThreadId = tgThreadId
+			res = db.Save(&bridgePair)
+		}
+		// else new record
+		res = db.Create(&MsgIdPair{
+			WaMessageId:      waMsgId,
+			WaParticipantJid: GetDatabaseJid(participantId),
+			WaChatJid:        GetDatabaseJid(waChatJid),
+			TgMessageId:      tgMsgId,
+			TgThreadId:       tgThreadId,
+		})
 	}
 
-	if bridgePair.WaMessageId == waMsgId {
-		bridgePair.WaSenderJid = GetDatabaseJid(participantId)
-		bridgePair.WaChatJid = GetDatabaseJid(waChatId)
-		bridgePair.TgMessageId = tgMsgId
-		bridgePair.TgThreadId = tgThreadId
-		res = db.Save(&bridgePair)
-		return res.Error
-	}
-	// else
-	res = db.Create(&MsgIdPair{
-		WaMessageId: waMsgId,
-		WaSenderJid: GetDatabaseJid(participantId),
-		WaChatJid:   GetDatabaseJid(waChatId),
-		TgMessageId: tgMsgId,
-		TgThreadId:  tgThreadId,
-	})
 	return res.Error
 }
 
