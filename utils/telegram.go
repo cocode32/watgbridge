@@ -58,8 +58,8 @@ func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, comm
 	return errors.Join(err, sendErr)
 }
 
-func TgGetOrMakeThreadFromWa(waChatId string, threadName string, name string) (int64, bool, error) {
-	jid, _ := waTypes.ParseJID(waChatId)
+func TgGetOrMakeThreadFromWa(waChatId waTypes.JID, threadName, name string) (int64, bool, error) {
+	jid := waChatId
 	cocoChatThread, threadFound := database.GetChatThread(jid)
 
 	if !threadFound {
