@@ -8,6 +8,8 @@ time_zone: Africa/Johannesburg
 ## Date Time information
 ### https://gosamples.dev/date-time-format-cheatsheet/
 time_format: Mon, 2006-01-02 @ 15:04:05
+# this config value controls what the suffix of media files are
+media_time_format: 2006-01-02_15.04.05
 
 # use which ffmpeg to get this path
 # if you set skip_video_stickers to true, then this is not needed

@@ -13,6 +13,7 @@ type Config struct {
 	Path             string `yaml:"-"`
 	TimeZone         string `yaml:"time_zone"`
 	TimeFormat       string `yaml:"time_format"`
+	MediaTimeFormat  string `yaml:"media_time_format"`
 	FfmpegExecutable string `yaml:"ffmpeg_executable"`
 	DebugMode        bool   `yaml:"debug_mode"`
 	SilentDbLogs     bool   `yaml:"silent_db_logs"`

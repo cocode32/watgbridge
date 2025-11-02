@@ -261,10 +261,11 @@ func MessageFromMeEventHandler(text string, v *events.Message, isEdited bool) {
 
 func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool) {
 	var (
-		cfg      = state.State.Config
-		logger   = state.State.Logger
-		tgBot    = state.State.TelegramBot
-		waClient = state.State.WhatsAppClient
+		cfg         = state.State.Config
+		logger      = state.State.Logger
+		tgBot       = state.State.TelegramBot
+		waClient    = state.State.WhatsAppClient
+		mediaSuffix = "_" + v.Info.Timestamp.Format(cfg.MediaTimeFormat) + "_"
 	)
 	defer logger.Sync()
 
@@ -640,6 +641,16 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 
 		gifMsg := v.Message.GetVideoMessage()
 		if gifMsg.GetURL() == "" {
+			bridgedText += "\n<i>A video message as a gif was sent. It could not be loaded</i>"
+			sentMsg, _ := tgBot.SendMessage(cfg.Telegram.TargetChatID, bridgedText, &gotgbot.SendMessageOpts{
+				ReplyParameters: &gotgbot.ReplyParameters{
+					MessageId: replyToMsgId,
+				},
+				MessageThreadId: threadId,
+			})
+			if sentMsg.MessageId != 0 {
+				database.MsgIdAddNewPair(msgId, v.Info.MessageSource.Sender, v.Info.Chat, sentMsg.MessageId, sentMsg.MessageThreadId)
+			}
 			return
 		}
 
@@ -692,7 +703,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			}
 
 			fileToSend := gotgbot.FileReader{
-				Name: "animation.gif",
+				Name: "animation" + mediaSuffix + ".gif",
 				Data: bytes.NewReader(gifBytes),
 			}
 
@@ -773,7 +784,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			}
 
 			fileToSend := gotgbot.FileReader{
-				Name: "video." + strings.Split(videoMsg.GetMimetype(), "/")[1],
+				Name: "video" + mediaSuffix + "." + strings.Split(videoMsg.GetMimetype(), "/")[1],
 				Data: bytes.NewReader(videoBytes),
 			}
 
@@ -850,7 +861,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			}
 
 			fileToSend := gotgbot.FileReader{
-				Name: "audio.ogg",
+				Name: "audio" + mediaSuffix + ".ogg",
 				Data: bytes.NewReader(audioBytes),
 			}
 
@@ -916,7 +927,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			}
 
 			fileToSend := gotgbot.FileReader{
-				Name: "audio.m4a",
+				Name: "audio" + mediaSuffix + ".m4a",
 				Data: bytes.NewReader(audioBytes),
 			}
 
