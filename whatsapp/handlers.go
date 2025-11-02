@@ -74,11 +74,11 @@ func PairSuccessHandler(event *events.PairSuccess) {
 		// make sure we don't exist with just one id
 		contactJid, foundJid := database.FindCocoContactByWhatsmeow(event.ID)
 		if foundJid {
-			database.CocoContactUpdateLid(contactJid.ID, event.LID)
+			_ = database.CocoContactUpdateLid(contactJid.ID, event.LID)
 		} else {
 			contactLid, foundLid := database.FindCocoContactByWhatsmeow(event.LID)
 			if foundLid {
-				database.CocoContactUpdateLid(contactLid.ID, event.ID)
+				_ = database.CocoContactUpdateLid(contactLid.ID, event.ID)
 			} else {
 				// nothing exists, we should create ourselves
 				database.CreateCocoContact(event.ID, event.LID, "You")
@@ -102,7 +102,7 @@ func ConnectedHandler() {
 }
 
 func AppStateSyncHandler(event *events.AppStateSyncComplete) {
-	if event.Name == appstate.WAPatchCriticalUnblockLow {
+	if event.Name == appstate.WAPatchCriticalUnblockLow && !state.State.Config.WhatsApp.SkipInitialSync {
 		InitialSyncContactsHandler()
 	}
 }
