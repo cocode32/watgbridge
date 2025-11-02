@@ -1,7 +1,6 @@
 package database
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"watgbridge/state"
@@ -65,6 +64,20 @@ func MsgIdGetWaFromTg(tgMsgId, tgThreadId int64) (msgId, participantId, chatId s
 	return bridgePair.WaMessageId, bridgePair.WaParticipantJid, bridgePair.WaChatJid, res.Error
 }
 
+func MsgIdPairGetChatUnread(waChatId types.JID) ([]MsgIdPair, error) {
+	db := state.State.Database
+
+	var bridgePairs []MsgIdPair
+	res := db.Where(&MsgIdPair{
+		WaChatJid: GetDatabaseJid(waChatId),
+		WaIsRead:  false,
+	}).Find(&bridgePairs)
+
+	return bridgePairs, res.Error
+}
+
+// MsgIdGetUnreadWa NOT USED AT THE MOMENT
+// TODO maybe come back here later
 func MsgIdGetUnreadWa(waChatId, participantJid types.JID) ([]MsgIdPair, error) {
 	db := state.State.Database
 
@@ -72,7 +85,7 @@ func MsgIdGetUnreadWa(waChatId, participantJid types.JID) ([]MsgIdPair, error) {
 	res := db.Where(&MsgIdPair{
 		WaChatJid:        GetDatabaseJid(waChatId),
 		WaParticipantJid: GetDatabaseJid(participantJid),
-		WaIsRead:         sql.NullBool{Bool: false, Valid: true},
+		WaIsRead:         false,
 	}).Find(&bridgePairs)
 
 	return bridgePairs, res.Error
