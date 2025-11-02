@@ -71,6 +71,7 @@ type Config struct {
 		SkipStartupMessage             bool     `yaml:"skip_startup_message"`
 		SkipQrCodeSend                 bool     `yaml:"skip_qr_code"`
 		SkipInitialPhotoSend           bool     `yaml:"skip_initial_photo_send"`
+		SkipInitialSync                bool     `yaml:"skip_initial_sync"`
 	} `yaml:"whatsapp"`
 
 	Database map[string]string `yaml:"database"`

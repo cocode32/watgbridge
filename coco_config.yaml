@@ -145,8 +145,8 @@ whatsapp:
   # if you feel like you don't care about your own messages, turn this off
   send_my_messages_from_other_devices: true
 
-  # TODO - add skip initial skip, for the crazy people I guess? xD
-  # skip_initial_sync: false
+  # If you don't want the bridge to sync your contacts when it connects to whatsapp, set this to true
+  skip_initial_sync: false
   # skips sending a picture of the person when creating a new thread
   skip_initial_photo_send: false
   # skips the qr code sent to the telegram bot

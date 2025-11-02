@@ -110,7 +110,7 @@ func WaGetGroupName(jid types.JID) string {
 }
 
 func WaGetContactName(waId types.JID) string {
-	cocoContact, found := database.FindCocoContactSingleId(waId)
+	cocoContact, found := database.FindCocoContactByWhatsmeow(waId)
 	if !found {
 		jid := waId
 		if jid.ToNonAD() == state.State.WhatsAppClient.Store.ID.ToNonAD() {
@@ -131,13 +131,13 @@ func WaGetContactName(waId types.JID) string {
 			if err == nil && contact.Found {
 				name = firstNonEmpty(contact.FullName, contact.FirstName, contact.PushName, contact.BusinessName)
 				if name != "" {
-					name += " (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+					name += " (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().String()) + ")"
 				}
 			}
 		}
 
 		if name == "" {
-			name = "User Unknown (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().Server) + ")"
+			name = "User Unknown (" + database.GetStringJidAsPhoneNumber(jid.ToNonAD().String()) + ")"
 		}
 
 		return name
@@ -209,7 +209,8 @@ func WaTagAll(group types.JID, msg *waE2E.Message, msgId, msgSender string, msgI
 	}
 
 	if !msgIsFromMe {
-		tagsThreadId, _, err := TgGetOrMakeThreadFromWa("mentions@broadcast", "Mentions", "Mentions")
+		waChatIdBroadcast, _ := types.ParseJID("mentions@broadcast")
+		tagsThreadId, _, err := TgGetOrMakeThreadFromWa(waChatIdBroadcast, "Mentions", "Mentions")
 		if err != nil {
 			TgSendErrorById(tgBot, cfg.Telegram.TargetChatID, 0, "Failed to create/retreive corresponding thread id for status/calls/tags", err)
 			return
