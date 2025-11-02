@@ -1052,7 +1052,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 		for _, idPair := range allUnread {
 			messageIds = append(messageIds, idPair.WaMessageId)
-			senderJID, _ := waTypes.ParseJID(idPair.WaSenderJid)
+			senderJID, _ := waTypes.ParseJID(idPair.WaParticipantJid)
 			err = waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, senderJID)
 			if err != nil {
 				logger.Warn(
