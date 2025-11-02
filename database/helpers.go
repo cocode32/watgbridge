@@ -150,7 +150,6 @@ func AddNewChatThread(waChatId types.JID, tgThreadId int64) error {
 func AddNewChatThreadWithPush(waChatId types.JID, tgThreadId int64, pushName string) error {
 	db := state.State.Database
 
-	var chatThread CocoChatThread
 	var cocoContact CocoContact
 	cocoChatThread, found := GetChatThread(waChatId)
 	if found {
@@ -160,7 +159,7 @@ func AddNewChatThreadWithPush(waChatId types.JID, tgThreadId int64, pushName str
 			cocoContact.PushName = pushName
 		}
 		var contactRes = db.Save(&cocoContact)
-		var threadRes = db.Save(&chatThread)
+		var threadRes = db.Save(&cocoChatThread)
 		return errors.Join(threadRes.Error, contactRes.Error)
 	}
 
