@@ -231,26 +231,27 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		}
 	}
 
-	if cfg.Telegram.SendMyPresenceOnReply {
-		err := waClient.SendPresence(waTypes.PresenceAvailable)
-		if err != nil {
-			logger.Warn("failed to send presence",
-				zap.Error(err),
-				zap.String("presence", string(waTypes.PresenceAvailable)),
-			)
-		}
-
-		go func() {
-			time.Sleep(10 * time.Second)
-			err := waClient.SendPresence(waTypes.PresenceUnavailable)
-			if err != nil {
-				logger.Warn("failed to send presence",
-					zap.Error(err),
-					zap.String("presence", string(waTypes.PresenceUnavailable)),
-				)
-			}
-		}()
-	}
+	// TODO - whatsmeow updated, not using this so it can fuck off for now
+	//if cfg.Telegram.SendMyPresenceOnReply {
+	//	err := waClient.SendPresence(waTypes.PresenceAvailable)
+	//	if err != nil {
+	//		logger.Warn("failed to send presence",
+	//			zap.Error(err),
+	//			zap.String("presence", string(waTypes.PresenceAvailable)),
+	//		)
+	//	}
+	//
+	//	go func() {
+	//		time.Sleep(10 * time.Second)
+	//		err := waClient.SendPresence(waTypes.PresenceUnavailable)
+	//		if err != nil {
+	//			logger.Warn("failed to send presence",
+	//				zap.Error(err),
+	//				zap.String("presence", string(waTypes.PresenceUnavailable)),
+	//			)
+	//		}
+	//	}()
+	//}
 
 	isEphemeral, ephemeralTimer, ephemeralFound, err := database.GetEphemeralSettings(waChatJID.String())
 	if err != nil {
@@ -262,7 +263,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	}
 
 	if !ephemeralFound && waChatJID.Server == waTypes.GroupServer {
-		groupInfo, err := waClient.GetGroupInfo(waChatJID)
+		groupInfo, err := waClient.GetGroupInfo(context.Background(), waChatJID)
 		if err != nil {
 			logger.Info(
 				"failed to get group info from WhatsApp",
@@ -1039,38 +1040,39 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 	}
 
+	// TODO this whole thing is fucked
 	// reworked logic from original fork
-	var messageIds []string
-	if cfg.Telegram.SendReadReceiptsOnReply {
-		unreadMessages, mainUnreadError := database.MsgIdPairGetChatUnread(waChatJID)
-
-		if mainUnreadError != nil {
-			_ = TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", errors.Join(mainUnreadError))
-		}
-
-		for _, idPair := range unreadMessages {
-			messageIds = append(messageIds, idPair.WaMessageId)
-			err = waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, *waClient.Store.ID)
-			if err != nil {
-				logger.Warn(
-					"failed to mark messages as read on whatsapp",
-					zap.String("chat_jid", waChatJID.String()),
-					zap.Any("msg_id", idPair.WaMessageId),
-					zap.String("sender_jid", waClient.Store.ID.String()),
-				)
-			}
-		}
-
-		err = database.MsgIdMarkReadWa(messageIds)
-
-		if err != nil {
-			logger.Warn(
-				"failed to mark messages as read on in CocoWaTgBridge db",
-				zap.String("chat_jid", waChatJID.String()),
-				zap.Any("msg_ids", messageIds),
-			)
-		}
-	}
+	//var messageIds []string
+	//if cfg.Telegram.SendReadReceiptsOnReply {
+	//	unreadMessages, mainUnreadError := database.MsgIdPairGetChatUnread(waChatJID)
+	//
+	//	if mainUnreadError != nil {
+	//		_ = TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", errors.Join(mainUnreadError))
+	//	}
+	//
+	//	for _, idPair := range unreadMessages {
+	//		messageIds = append(messageIds, idPair.WaMessageId)
+	//		err = waClient.MarkRead([]waTypes.MessageID{idPair.WaMessageId}, time.Now(), waChatJID, *waClient.Store.ID)
+	//		if err != nil {
+	//			logger.Warn(
+	//				"failed to mark messages as read on whatsapp",
+	//				zap.String("chat_jid", waChatJID.String()),
+	//				zap.Any("msg_id", idPair.WaMessageId),
+	//				zap.String("sender_jid", waClient.Store.ID.String()),
+	//			)
+	//		}
+	//	}
+	//
+	//	err = database.MsgIdMarkReadWa(messageIds)
+	//
+	//	if err != nil {
+	//		logger.Warn(
+	//			"failed to mark messages as read on in CocoWaTgBridge db",
+	//			zap.String("chat_jid", waChatJID.String()),
+	//			zap.Any("msg_ids", messageIds),
+	//		)
+	//	}
+	//}
 
 	return nil
 }

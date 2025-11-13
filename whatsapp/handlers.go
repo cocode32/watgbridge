@@ -125,7 +125,7 @@ func SendProfilePictureToNewThread(isNewThread bool, threadId int64, waTargetCha
 	)
 
 	if isNewThread && !cfg.WhatsApp.SkipInitialPhotoSend {
-		pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(
+		pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(context.Background(),
 			waTargetChat,
 			&whatsmeow.GetProfilePictureParams{
 				Preview: false,
@@ -512,7 +512,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 				return
 			}
 			if isNewThread && !cfg.WhatsApp.SkipInitialPhotoSend {
-				pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(
+				pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(context.Background(),
 					v.Info.Chat,
 					&whatsmeow.GetProfilePictureParams{
 						Preview: false,
@@ -1619,7 +1619,7 @@ func PictureEventHandler(v *events.Picture) {
 				return
 			}
 		} else {
-			pictureInfo, err := waClient.GetProfilePictureInfo(
+			pictureInfo, err := waClient.GetProfilePictureInfo(context.Background(),
 				v.JID,
 				&whatsmeow.GetProfilePictureParams{
 					Preview: false,
@@ -1672,7 +1672,7 @@ func PictureEventHandler(v *events.Picture) {
 				return
 			}
 		} else {
-			pictureInfo, err := waClient.GetProfilePictureInfo(
+			pictureInfo, err := waClient.GetProfilePictureInfo(context.Background(),
 				v.JID,
 				&whatsmeow.GetProfilePictureParams{
 					Preview: false,
@@ -1732,7 +1732,7 @@ func SendPictureToInfoUpdatesThread(v *events.Picture, cfg *state.Config, logger
 				return true
 			}
 		} else {
-			pictureInfo, err := waClient.GetProfilePictureInfo(
+			pictureInfo, err := waClient.GetProfilePictureInfo(context.Background(),
 				v.JID,
 				&whatsmeow.GetProfilePictureParams{
 					Preview: false,
