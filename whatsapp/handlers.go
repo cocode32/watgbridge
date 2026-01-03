@@ -1432,6 +1432,16 @@ func UserAboutEventHandler(v *events.UserAbout) {
 		tgBot    = state.State.TelegramBot
 		waClient = state.State.WhatsAppClient
 	)
+
+	if cfg.WhatsApp.SkipUserAboutUpdates {
+		logger.Debug("Skipping user about update as configured",
+			zap.String("jid", v.JID.String()),
+			zap.String("new_status", v.Status),
+			zap.Time("updated_at", v.Timestamp),
+		)
+		return
+	}
+
 	defer logger.Sync()
 
 	logger.Debug("new user_about update",
