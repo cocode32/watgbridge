@@ -6,6 +6,8 @@ toolchain go1.24.4
 
 require (
 	github.com/PaulSonOfLars/gotgbot/v2 v2.0.0-rc.33
+	github.com/cocode32/tg-sticker-converter v0.0.0-20251024140034-106f766bdf9a
+	github.com/cocode32/watg-webp v0.0.0-20251024140024-22a595bcf98d
 	github.com/emersion/go-vcard v0.0.0-20241024213814-c9703dde27ff
 	github.com/forPelevin/gomoji v1.4.1
 	github.com/go-co-op/gocron v1.37.0
@@ -14,8 +16,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/mdp/qrterminal/v3 v3.2.1
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
-	github.com/watgbridge/tgsconverter v0.0.0-20240710075117-d1c05581b842
-	github.com/watgbridge/webp v0.0.0-20240709143015-99fb5316f772
 	go.mau.fi/whatsmeow v0.0.0-20251016095441-02c50743e601
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db
