@@ -110,12 +110,6 @@ func NewWhatsAppClient() error {
 		}
 		for evt := range qrChan {
 			if evt.Event == "code" {
-				// var png []byte
-				// png, _err := qrcode.Encode("aklsdfjasdfaklsdfjlasdfjaskldfjasldfjaklsdfjals", qrcode.Highest, 256)
-				// if _err != nil {
-				// 	panic(_err)
-				// }
-
 				if state.State.TelegramBot != nil {
 					qrCodePNG, err := qrcode.Encode(evt.Code, qrcode.Highest, 512)
 					if err != nil {
