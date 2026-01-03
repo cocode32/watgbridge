@@ -182,7 +182,7 @@ func BridgeTelegramToWhatsAppHandler(b *gotgbot.Bot, c *ext.Context) error {
 		waChatJID, _ := utils.WaParseJID(participantID)
 		contactName := utils.WaGetContactName(waChatJID)
 
-		contactThreadID, err := utils.TgGetOrMakeThreadFromWa(waChatJID, c.EffectiveChat.Id, contactName)
+		contactThreadID, _, err := utils.TgGetOrMakeThreadFromWa(waChatJID, c.EffectiveChat.Id, contactName)
 		if err != nil {
 			return utils.TgReplyWithErrorByContext(b, c, "Failed to get or create a thread for the contact", err)
 		}

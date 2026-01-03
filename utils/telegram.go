@@ -58,34 +58,34 @@ func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, comm
 	return errors.Join(err, sendErr)
 }
 
-func TgGetOrMakeThreadFromWa_String(waChatIdString string, tgChatId int64, threadName string) (int64, error) {
+func TgGetOrMakeThreadFromWa_String(waChatIdString string, tgChatId int64, threadName string) (int64, bool, error) {
 	threadId, threadFound, err := database.ChatThreadGetTgFromWa(waChatIdString, tgChatId)
 	if err != nil {
-		return 0, err
+		return 0, threadFound, err
 	}
 
 	if !threadFound {
 		tgBot := state.State.TelegramBot
 		newForum, err := tgBot.CreateForumTopic(tgChatId, threadName, &gotgbot.CreateForumTopicOpts{})
 		if err != nil {
-			return 0, err
+			return 0, threadFound, err
 		}
 		err = database.ChatThreadAddNewPair(waChatIdString, tgChatId, newForum.MessageThreadId)
 		if err != nil {
-			return newForum.MessageThreadId, err
+			return newForum.MessageThreadId, threadFound, err
 		}
-		return newForum.MessageThreadId, nil
+		return newForum.MessageThreadId, threadFound, nil
 	}
 
-	return threadId, nil
+	return threadId, threadFound, nil
 }
 
-func TgGetOrMakeThreadFromWa(waChatId waTypes.JID, tgChatId int64, threadName string) (int64, error) {
+func TgGetOrMakeThreadFromWa(waChatId waTypes.JID, tgChatId int64, threadName string) (int64, bool, error) {
 	if waChatId.Server == waTypes.HiddenUserServer {
 		waClient := state.State.WhatsAppClient
 		pn, err := waClient.Store.LIDs.GetPNForLID(context.Background(), waChatId)
 		if err != nil {
-			return 0, err
+			return 0, false, err
 		}
 		waChatId = pn
 	}
