@@ -29,6 +29,12 @@ func WhatsAppEventHandler(evt interface{}) {
 
 	switch v := evt.(type) {
 
+	case *events.Connected:
+		ConnectedHandler()
+
+	case *events.PairSuccess:
+		PairSuccessHandler(v)
+
 	case *events.LoggedOut:
 		LogoutHandler(v)
 
@@ -102,6 +108,45 @@ func WhatsAppEventHandler(evt interface{}) {
 		}
 	}
 
+}
+
+func PairSuccessHandler(event *events.PairSuccess) {
+	// TODO - nothing is done here for now - this needs to be re-worked from the original coco_database changes
+	//// save me into the database
+	//_, found := database.FindCocoContact(event.ID, event.LID)
+	//if !found {
+	//	// make sure we don't exist with just one id
+	//	contactJid, foundJid := database.FindCocoContactByWhatsmeow(event.ID)
+	//	if foundJid {
+	//		_ = database.CocoContactUpdateLid(contactJid.ID, event.LID)
+	//	} else {
+	//		contactLid, foundLid := database.FindCocoContactByWhatsmeow(event.LID)
+	//		if foundLid {
+	//			_ = database.CocoContactUpdateLid(contactLid.ID, event.ID)
+	//		} else {
+	//			// nothing exists, we should create ourselves
+	//			database.CreateCocoContact(event.ID, event.LID, "You")
+	//		}
+	//	}
+	//
+	//	return
+	//}
+	//
+	//_ = database.CocoContactUpdatePushName(event.ID, event.LID, "You")
+}
+
+func ConnectedHandler() {
+	var (
+		logger = state.State.Logger
+		cfg    = state.State.Config
+	)
+	defer logger.Sync()
+
+	logger.Info("successfully connected to whatsapp")
+
+	if !cfg.WhatsApp.SkipStartupMessage {
+		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully connected to WhatsApp from Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
+	}
 }
 
 func MessageFromMeEventHandler(text string, v *events.Message, isEdited bool) {

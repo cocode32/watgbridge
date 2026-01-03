@@ -155,5 +155,9 @@ func NewWhatsAppClient() error {
 		zap.String("jid", client.Store.ID.String()),
 	)
 
+	if !cfg.WhatsApp.SkipStartupMessage {
+		state.State.TelegramBot.SendMessage(cfg.Telegram.OwnerID, "Successfully logged into WhatsApp from Coco_WaTgBridge", &gotgbot.SendMessageOpts{})
+	}
+
 	return nil
 }
