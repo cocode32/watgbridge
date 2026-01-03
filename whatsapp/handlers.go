@@ -1514,7 +1514,7 @@ func RevokedMessageEventHandler(v *events.Message) {
 		waChatId    = v.Info.Chat.String()
 	)
 
-	if !cfg.WhatsApp.SendRevokedMessageUpdates {
+	if !cfg.WhatsApp.SkipRevokedMessage {
 		return
 	}
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -33,12 +34,28 @@ const (
 	UploadSizeLimit   uint64 = 52428800
 )
 
-func TgRegisterBotCommands(b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
-	_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
+func TgRegisterBotCommands(ownerId int64, skipMessage bool, b *gotgbot.Bot, commands ...gotgbot.BotCommand) error {
+	hasCommands := len(commands) > 0
+	var sendErr error
+
+	if hasCommands {
+		_, err := b.SetMyCommands(commands, &gotgbot.SetMyCommandsOpts{
+			LanguageCode: "en",
+			Scope:        gotgbot.BotCommandScopeChat{ChatId: ownerId},
+		})
+		if !skipMessage {
+			_, sendErr = b.SendMessage(ownerId, "Successfully set all commands to the bot", &gotgbot.SendMessageOpts{})
+		}
+		return errors.Join(err, sendErr)
+	}
+	_, err := b.DeleteMyCommands(&gotgbot.DeleteMyCommandsOpts{
 		LanguageCode: "en",
 		Scope:        gotgbot.BotCommandScopeDefault{},
 	})
-	return err
+	if !skipMessage {
+		_, sendErr = b.SendMessage(ownerId, "Successfully removed all commands from this bot", &gotgbot.SendMessageOpts{})
+	}
+	return errors.Join(err, sendErr)
 }
 
 func TgGetOrMakeThreadFromWa_String(waChatIdString string, tgChatId int64, threadName string) (int64, error) {
@@ -82,7 +99,7 @@ func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {
 	}
 
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/file/bot%s/%s",
-		state.State.Config.Telegram.APIURL, b.Token, filePath), nil)
+		state.State.Config.Telegram.ApiUrl, b.Token, filePath), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +240,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 		}
 	}
 
-	if cfg.Telegram.SendMyPresence {
+	if cfg.Telegram.SendMyPresenceOnReply {
 		err := waClient.SendPresence(waTypes.PresenceAvailable)
 		if err != nil {
 			logger.Warn("failed to send presence",
@@ -1042,7 +1059,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 	}
 
-	if cfg.Telegram.SendMyReadReceipts {
+	if cfg.Telegram.SendReadReceiptsOnReply {
 		unreadMsgs, err := database.MsgIdGetUnread(waChatJID.String())
 		if err != nil {
 			return TgReplyWithErrorByContext(b, c, "Message sent but failed to get unread messages to mark them read", err)
