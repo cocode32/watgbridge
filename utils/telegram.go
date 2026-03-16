@@ -93,6 +93,19 @@ func TgGetOrMakeThreadFromWa(waChatId waTypes.JID, tgChatId int64, threadName st
 	return TgGetOrMakeThreadFromWa_String(waChatIdString, tgChatId, threadName)
 }
 
+func TgGetOrMakeThreadFromWa(waChatId waTypes.JID, tgChatId int64, threadName string) (int64, error) {
+	if waChatId.Server == waTypes.HiddenUserServer {
+		waClient := state.State.WhatsAppClient
+		pn, err := waClient.Store.LIDs.GetPNForLID(context.Background(), waChatId)
+		if err != nil {
+			return 0, err
+		}
+		waChatId = pn
+	}
+	waChatIdString := waChatId.ToNonAD().String()
+	return TgGetOrMakeThreadFromWa_String(waChatIdString, tgChatId, threadName)
+}
+
 func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {
 	if state.State.Config.Telegram.SelfHostedAPI {
 		return os.ReadFile(filePath)
@@ -251,7 +264,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 		go func() {
 			time.Sleep(10 * time.Second)
-			err := waClient.SendPresence(waTypes.PresenceUnavailable)
+			err := waClient.SendPresence(context.Background(), waTypes.PresenceUnavailable)
 			if err != nil {
 				logger.Warn("failed to send presence",
 					zap.Error(err),
@@ -271,7 +284,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	}
 
 	if !ephemeralFound && waChatJID.Server == waTypes.GroupServer {
-		groupInfo, err := waClient.GetGroupInfo(waChatJID)
+		groupInfo, err := waClient.GetGroupInfo(context.Background(), waChatJID)
 		if err != nil {
 			logger.Info(
 				"failed to get group info from WhatsApp",
@@ -1067,7 +1080,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 
 		for sender, msgIds := range unreadMsgs {
 			senderJID, _ := WaParseJID(sender)
-			err := waClient.MarkRead(msgIds, time.Now(), waChatJID, senderJID)
+			err := waClient.MarkRead(context.Background(), msgIds, time.Now(), waChatJID, senderJID)
 			if err != nil {
 				logger.Warn(
 					"failed to mark messages as read",
