@@ -168,6 +168,7 @@ func SendProfilePictureToNewThread(threadFound bool, threadId int64, waTargetCha
 
 	if !threadFound && !cfg.WhatsApp.SkipInitialPhotoSend {
 		pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(
+			context.Background(),
 			waTargetChat,
 			&whatsmeow.GetProfilePictureParams{
 				Preview: false,
@@ -553,6 +554,7 @@ func MessageFromOthersEventHandler(text string, v *events.Message, isEdited bool
 			}
 			if !threadFound && !cfg.WhatsApp.SkipInitialPhotoSend {
 				pictureInfo, err := state.State.WhatsAppClient.GetProfilePictureInfo(
+					context.Background(),
 					v.Info.Chat,
 					&whatsmeow.GetProfilePictureParams{
 						Preview: false,
@@ -1611,10 +1613,9 @@ func PushNameEventHandler(v *events.PushName) {
 
 func UserAboutEventHandler(v *events.UserAbout) {
 	var (
-		cfg      = state.State.Config
-		logger   = state.State.Logger
-		tgBot    = state.State.TelegramBot
-		waClient = state.State.WhatsAppClient
+		cfg    = state.State.Config
+		logger = state.State.Logger
+		tgBot  = state.State.TelegramBot
 	)
 
 	if cfg.WhatsApp.SkipUserAboutUpdates {

@@ -93,19 +93,6 @@ func TgGetOrMakeThreadFromWa(waChatId waTypes.JID, tgChatId int64, threadName st
 	return TgGetOrMakeThreadFromWa_String(waChatIdString, tgChatId, threadName)
 }
 
-func TgGetOrMakeThreadFromWa(waChatId waTypes.JID, tgChatId int64, threadName string) (int64, error) {
-	if waChatId.Server == waTypes.HiddenUserServer {
-		waClient := state.State.WhatsAppClient
-		pn, err := waClient.Store.LIDs.GetPNForLID(context.Background(), waChatId)
-		if err != nil {
-			return 0, err
-		}
-		waChatId = pn
-	}
-	waChatIdString := waChatId.ToNonAD().String()
-	return TgGetOrMakeThreadFromWa_String(waChatIdString, tgChatId, threadName)
-}
-
 func TgDownloadByFilePath(b *gotgbot.Bot, filePath string) ([]byte, error) {
 	if state.State.Config.Telegram.SelfHostedAPI {
 		return os.ReadFile(filePath)
@@ -254,7 +241,7 @@ func TgSendToWhatsApp(b *gotgbot.Bot, c *ext.Context,
 	}
 
 	if cfg.Telegram.SendMyPresenceOnReply {
-		err := waClient.SendPresence(waTypes.PresenceAvailable)
+		err := waClient.SendPresence(context.Background(), waTypes.PresenceAvailable)
 		if err != nil {
 			logger.Warn("failed to send presence",
 				zap.Error(err),
